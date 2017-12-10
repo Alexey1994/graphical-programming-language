@@ -1,0 +1,39 @@
+combobox
+{
+    position:         relative;
+    display:          inline-block;
+}
+
+combobox combobox_selected
+{
+}
+
+combobox combobox_selected input
+{
+    height:           20px;
+    padding:          0;
+    border:           1px solid #000;
+}
+
+combobox combobox_values
+{
+    position:         absolute;
+    top:              20px;
+    left:             0;
+    min-width:        200px;
+    max-height:       200px;
+    overflow-y:       auto;
+    display:          none;
+    border:           1px solid #cecece;
+}
+
+combobox combobox_values combobox_value
+{
+    display:          block;
+    background-color: #fff;
+}
+
+combobox combobox_values combobox_value:hover
+{
+    background-color: #aaa;
+}

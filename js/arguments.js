@@ -1,0 +1,3 @@
+addElement('arguments', function(element)
+{
+})

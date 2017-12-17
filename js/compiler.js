@@ -248,9 +248,9 @@ function redraw()
 
             .inner_block()
             .begin()
+                .label('константы:')
                 .list()
                 .begin()
-                    .label('константы:')
                     .inner(function(parent)
                     {
                         currentFunction.constants.forEach(function(canstant, i)
@@ -289,9 +289,9 @@ function redraw()
 
             .inner_block()
             .begin()
+                .label('аргументы:')
                 .list()
                 .begin()
-                    .label('аргументы:')
                     .inner(function(parent)
                     {
                         currentFunction.arguments.forEach(function(argument, i)
@@ -336,9 +336,9 @@ function redraw()
 
             .inner_block()
             .begin()
+                .label('переменные:')
                 .list()
                 .begin()
-                    .label('переменные:')
                     .inner(function(parent)
                     {
                         currentFunction.variables.forEach(function(variable, i)
@@ -378,9 +378,9 @@ function redraw()
 
             .inner_block()
             .begin()
+                .label('функции:')
                 .list()
                 .begin()
-                    .label('функции:')
                     .inner(function(parent)
                     {
                         function selectFunction(f)

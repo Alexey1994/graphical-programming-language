@@ -1,15 +1,56 @@
+function allAllowedFunctions(f, argumentNumber)
+{
+    var allowedFunctions = []
+
+    for(var i in currentFunction.constants)
+        allowedFunctions.push(currentFunction.constants[i])
+
+    for(var i in currentFunction.arguments)
+        allowedFunctions.push(currentFunction.constants[i])
+
+    for(var i in currentFunction.variables)
+        allowedFunctions.push(currentFunction.variables[i])
+
+    for(var i in functions)
+        allowedFunctions.push(functions[i])
+
+    return allowedFunctions
+}
+
 function drawArgumentSelector(parent, f, selectedArguments, i)
 {
     parent
         .begin()
-            .menu(functions, function(f, element)
+            .menu(allAllowedFunctions(f, i), function(f, element)
             {
-                selectedArguments[i] = {
-                    function: f,
-                    arguments: []
+                if(f.isVariable)
+                {
+                    selectedArguments[i] = {
+                        variable: f,
+                        arguments: []
+                    }
+
+                    drawFunction(parent, selectedArguments[i].variable, selectedArguments[i].arguments)
+                }
+                else if(f.isConstant)
+                {
+                    selectedArguments[i] = {
+                        constant: f,
+                        arguments: []
+                    }
+
+                    drawFunction(parent, selectedArguments[i].constant, selectedArguments[i].arguments)
+                }
+                else
+                {
+                    selectedArguments[i] = {
+                        function: f,
+                        arguments: []
+                    }
+
+                    drawFunction(parent, selectedArguments[i].function, selectedArguments[i].arguments)
                 }
 
-                drawFunction(parent, selectedArguments[i].function, selectedArguments[i].arguments)
                 redraw()
             })
         .end()
@@ -18,12 +59,19 @@ function drawArgumentSelector(parent, f, selectedArguments, i)
 function drawArgument(parent, f, argumentDescription, selectedArguments, i)
 {
     parent
-        .argument(argumentDescription.name)
+        .argument(argumentDescription.label)
         .begin()
             .inner(function(argumentBody)
             {
                 if(selectedArguments[i])
-                    drawFunction(argumentBody, selectedArguments[i].function, selectedArguments[i].arguments)
+                {
+                    if(selectedArguments[i].function)
+                        drawFunction(argumentBody, selectedArguments[i].function, selectedArguments[i].arguments)
+                    else if(selectedArguments[i].constant)
+                        drawFunction(argumentBody, selectedArguments[i].constant, selectedArguments[i].arguments)
+                    else
+                        drawFunction(argumentBody, selectedArguments[i].variable, selectedArguments[i].arguments)
+                }
                 else
                     drawArgumentSelector(argumentBody.cell(), f, selectedArguments, i)
             })     
@@ -33,7 +81,10 @@ function drawArgument(parent, f, argumentDescription, selectedArguments, i)
 function drawFunction(parent, f, selectedArguments)
 {
     parent
-        .function(f.name)
+        .function(f.name, function()
+        {
+
+        })
         .begin()
             .arguments()
             .begin()
@@ -53,20 +104,30 @@ function drawProgram(parent, program)
         .begin()
             .menu(functions, function(f)
             {
-                program.unshift( {function: f, arguments: []} )
+                program.unshift({
+                    function: f,
+                    arguments: []
+                })
+                /*currentFunction.body.unshift({
+                    function: f,
+                    arguments: []
+                })*/
                 redraw()
             })
         .end()
         .inner(function(parent)
         {
-            program.forEach(function(f, i)
+            currentFunction.body.forEach(function(f, i)
             {
                 parent
                     .block()
                     .begin()
                         .inner(function(functionBody)
                         {
-                            drawFunction(functionBody, f.function, f.arguments)
+                            if(f.function)
+                                drawFunction(functionBody, f.function, f.arguments)
+                            else
+                                drawFunction(functionBody, f.variable, f.arguments)
                         })
                     .end()
 
@@ -76,7 +137,11 @@ function drawProgram(parent, program)
                         .begin()
                         .menu(functions, function(f)
                         {
-                            program.splice( i+1, 0, {function: f, arguments: new Array(f.arguments.length)} )
+                            program.splice( i+1, 0, {
+                                function: f,
+                                arguments: new Array(f.arguments.length)
+                            })
+
                             redraw()
                         })
                         .end()
@@ -85,262 +150,337 @@ function drawProgram(parent, program)
         })
 }
 
-var functions = [
-    {
+function translateFunctionCall(f, args)
+{
+    console.log('call ' + f.name)
+    console.log('push eax')
+}
+
+var functions = {
+    'main': {
         name: 'main',
         arguments: [],
         variables: [],
-        body: []
+        constants: [],
+        body: [],
+        translate: function(f, args)
+        {
+
+        }
     },
 
-    {
+    'сумма': {
         name: 'сумма',
         arguments: [
-            { name: '' },
-            { name: 'и' }
+            { name: 'a', label: '' },
+            { name: 'b', label: 'и' }
         ],
-        body: []
-    }
-
-    /*{
-        name: 'взорвать',
-        arguments: [
-            { name: 'объект' }
-        ]
+        variables: [],
+        constants: [],
+        body: [],
+        translate: function(f, args)
+        {
+            //var asmString = 'add '
+            console.log('pop ebx')
+            console.log('pop eax')
+            console.log('add eax, ebx')
+            console.log('push eax')
+        }
     },
 
-    {
-        name: 'бомба',
-        arguments: []
-    },
-
-    {
-        name: '1',
-        arguments: []
-    },
-
-    {
-        name: '2',
-        arguments: []
-    },
-
-    {
-        name: 'сумма',
-        arguments: [
-            { name: '' },
-            { name: 'и' }
-        ]
-    },
-
-    {
+    'разность': {
         name: 'разность',
         arguments: [
-            { name: '' },
-            { name: 'и' }
-        ]
-    },
+            { name: 'a', label: '' },
+            { name: 'b', label: 'и' }
+        ],
+        variables: [],
+        constants: [],
+        body: [],
+        translate: function(f, args)
+        {
+            //var asmString = 'add '
+            console.log('pop ebx')
+            console.log('pop eax')
+            console.log('sub eax, ebx')
+            console.log('push eax')
+        }
+    }
+}
 
-    {
-        name: 'умножение',
-        arguments: [
-            { name: '' },
-            { name: 'на' }
-        ]
-    },
-
-    {
-        name: 'деление',
-        arguments: [
-            { name: '' },
-            { name: 'на' }
-        ]
-    },
-
-    {
-        name: 'запомнить',
-        arguments: [
-            { name: '' },
-            { name: 'как' }
-        ]
-    },
-
-    {
-        name: 'первый член определителя',
-        arguments: []
-    },
-
-    {
-        name: 'второй член определителя',
-        arguments: []
-    },
-
-    {
-        name: 'определитель',
-        arguments: []
-    },
-
-    {
-        name: 'а11',
-        arguments: []
-    },
-
-    {
-        name: 'а12',
-        arguments: []
-    },
-
-    {
-        name: 'а21',
-        arguments: []
-    },
-
-    {
-        name: 'а22',
-        arguments: []
-    },
-
-    {
-        name: 'номер числа',
-        arguments: []
-    },
-
-    {
-        name: 'изменить порядковый номер',
-        arguments: [
-            { name: '' },
-            { name: 'на' }
-        ]
-    },
-
-    {
-        name: 'запомнить',
-        arguments: [
-            { name: '' },
-            { name: 'как' }
-        ]
-    },
-
-    {
-        name: 'взять следующий номер',
-        arguments: [
-            { name: '' }
-        ]
-    },
-
-    {
-        name: 'продолжить если',
-        arguments: [
-            { name: '' },
-            { name: 'меньше чем' }
-        ]
-    },
-
-    {
-        name: 'установить позицию',
-        arguments: [
-            { name: 'итератора' },
-            { name: 'на' }
-        ]
-    },*/
-]
-
-var currentFunction = functions[0]
-
+var currentFunction = functions['main']
+/*
 var program = [
-    /*{
+    {
         function:  functions[0],
         arguments: [
             {
                 function: functions[1],
+                variable: undefined,
                 arguments: []
             },
 
             {
                 function: functions[0],
+                variable: undefined,
                 arguments: []
             }
         ]
-    }*/
-]
+    }
+]*/
 
 var programBody
 
 function redraw()
 {
     draw()
-        .block()
+        
+        .divider()
+        .begin()
+            .inner_block()
+            .begin()
+                .block()
+                .begin()
+                    .label('выбранная функция:')
+                    .label(currentFunction.name)
+                .end()
+            .end()
+
+            .inner_block()
+            .begin()
+                .list()
+                .begin()
+                    .label('константы:')
+                    .inner(function(parent)
+                    {
+                        currentFunction.constants.forEach(function(canstant, i)
+                        {
+                            parent
+                                .function(canstant.name, function()
+                                {
+                                    console.log(canstant)
+                                })
+                                //.label(variable.name)
+                        })
+                    })
+                .end()
+
+                .block()
+                .begin()
+                    .input_text('значение константы', function(element, event)
+                    {
+                        //console.log(element)
+                        //console.log(event)
+                    })
+                    .button('добавить константу', function(element, event)
+                    {
+                        currentFunction.constants.push({
+                            name:       element.parent.children[0].text,
+                            arguments:  [],
+                            variables:  [],
+                            constants:  [],
+                            body:       [],
+                            isConstant: true
+                        })
+                        redraw()
+                    })
+                .end()
+            .end()
+
+            .inner_block()
+            .begin()
+                .list()
+                .begin()
+                    .label('аргументы:')
+                    .inner(function(parent)
+                    {
+                        currentFunction.arguments.forEach(function(argument, i)
+                        {
+                            parent
+                                .function(argument.label + ' ' + argument.name, function()
+                                {
+                                    console.log(argument)
+                                })
+                                //.label(variable.name)
+                        })
+                    })
+                .end()
+
+                .block()
+                .begin()
+                    .input_text('описание аргумента', function(element, event)
+                    {
+                        //console.log(element)
+                        //console.log(event)
+                    })
+                    .input_text('имя аргумента', function(element, event)
+                    {
+                        //console.log(element)
+                        //console.log(event)
+                    })
+                    .button('добавить аргумент', function(element, event)
+                    {
+                        currentFunction.arguments.push({
+                            label:      element.parent.children[0].text,
+                            name:       element.parent.children[1].text,
+                            arguments:  [],
+                            variables:  [],
+                            constants:  [],
+                            body:       [],
+                            isArgument: true
+                        })
+                        redraw()
+                    })
+                .end()
+            .end()
+
+            .inner_block()
+            .begin()
+                .list()
+                .begin()
+                    .label('переменные:')
+                    .inner(function(parent)
+                    {
+                        currentFunction.variables.forEach(function(variable, i)
+                        {
+                            parent
+                                .function(variable.name, function()
+                                {
+                                    console.log(variable)
+                                })
+                                //.label(variable.name)
+                        })
+                    })
+                .end()
+
+                .block()
+                .begin()
+                    .input_text('имя переменной', function(element, event)
+                    {
+                        //console.log(element)
+                        //console.log(event)
+                    })
+                    .button('добавить переменную', function(element, event)
+                    {
+                        currentFunction.variables.push({
+                            name:           element.parent.children[0].text,
+                            arguments:      [],
+                            variables:      [],
+                            constants:      [],
+                            body:           [],
+                            variableNumber: currentFunction.variables.length,
+                            isVariable:     true
+                        })
+                        redraw()
+                    })
+                .end()
+            .end()
+
+            .inner_block()
+            .begin()
+                .list()
+                .begin()
+                    .label('функции:')
+                    .inner(function(parent)
+                    {
+                        function selectFunction(f)
+                        {
+                            parent
+                                .function(f.name, function()
+                                {
+                                    currentFunction = f
+                                    redraw()
+                                })
+                        }
+
+                        for(var i in functions)
+                            selectFunction(functions[i])
+                    })
+                .end()
+
+                .block()
+                .begin()
+                    .input_text('имя функции', function(element, event)
+                    {
+                        //console.log(element)
+                        //console.log(event)
+                    })
+                    .button('добавить функцию', function(element, event)
+                    {
+                        functions[element.parent.children[0].text] = {
+                            name:      element.parent.children[0].text,
+                            arguments: [],
+                            variables: [],
+                            constants: [],
+                            body:      [],
+                            translate: translateFunctionCall
+                        }
+                        redraw()
+                    })
+                .end()
+            .end()
+
+            .inner_block()
+            .begin()
+                .button('Компилировать', function()
+                {
+                    function translateArgument(argument)
+                    {
+                        for(var j in argument.arguments)
+                        {
+                            var currentArgument = argument.arguments[j]
+                            translateArgument(currentArgument)
+                        }
+
+                        if(argument.function && argument.function.translate)
+                            argument.function.translate(argument.function, argument.arguments)
+                        else if(argument.variable)
+                            console.log('push [ebp + ' + argument.variable.variableNumber + '] (' + argument.variable.name + ')')
+                        else if(argument.constant)
+                            console.log('push ' + argument.constant.name)
+                        else
+                        {
+                            console.log('ошибка: пустой аргумент')
+                            console.log(argument)
+                        }
+                    }
+
+                    var main = functions['main']
+
+                    for(var i in main.body)
+                    {
+                        var currentCall = main.body[i]
+
+                        for(var j in currentCall.arguments)
+                        {
+                            var currentArgument = currentCall.arguments[j]
+                            translateArgument(currentArgument)
+                        }
+
+                        if(currentCall.function && currentCall.function.translate)
+                            currentCall.function.translate(currentCall.function, currentCall.arguments)
+                        else if(currentCall.variable)
+                            console.log('push [ebp + ' + currentCall.variable.variableNumber + '] (' + currentCall.variable.name + ')')
+                        else if(argument.constant)
+                            console.log('push ' + currentCall.constant.name)
+                        else
+                        {
+                            console.log('ошибка: пустой аргумент')
+                            console.log(argument)
+                        }
+                    }
+                })
+            .end()
+        .end()
+
+        .window_divider()
+
+        .divider()
         .begin()
             .inner(function(programBody)
             {
-                drawProgram(programBody, program)
+                drawProgram(programBody, currentFunction.body)
             })
-        .end()
-
-        .block()
-        .begin()
-            .vertical_space()
-            .block()
-            .begin()
-                .label('переменные:')
-                .inner(function(parent)
-                {
-                    currentFunction.variables.forEach(function(variable, i)
-                    {
-                        parent
-                            .label(variable.name)
-                    })
-                })
-            .end()
-
-            .block()
-            .begin()
-                .input_text('имя переменной', function(element, event)
-                {
-                    //console.log(element)
-                    //console.log(event)
-                })
-                .button('добавить переменную', function(element, event)
-                {
-                    currentFunction.variables.push({
-                        name: element.parent.children[0].text,
-                        arguments: [],
-                        body: []
-                    })
-                    redraw()
-                })
-            .end()
-
-            .vertical_space()
-            .block()
-            .begin()
-                .label('функции:')
-                .inner(function(parent)
-                {
-                    functions.forEach(function(f, i)
-                    {
-                        parent
-                            .label(f.name)
-                    })
-                })
-            .end()
-
-            .block()
-            .begin()
-                .input_text('имя функции', function(element, event)
-                {
-                    //console.log(element)
-                    //console.log(event)
-                })
-                .button('добавить функцию', function(element, event)
-                {
-                    functions.push({
-                        name: element.parent.children[0].text,
-                        arguments: [],
-                        body: []
-                    })
-                    redraw()
-                })
-            .end()
         .end()
 }
 

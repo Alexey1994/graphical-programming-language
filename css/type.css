@@ -1,0 +1,14 @@
+type
+{
+    display:          block;
+    padding:          10px;
+    margin-bottom:    7px;
+    background-color: #9eb8e0;
+    box-shadow:       3px 3px 6px 0px #7d7d7d;
+}
+
+type:hover
+{
+    cursor:           pointer;
+    background-color: #eaa;
+}

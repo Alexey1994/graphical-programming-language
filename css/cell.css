@@ -1,5 +1,6 @@
 cell
 {
+    position:       relative;
     display:        table-cell;
     vertical-align: middle;
 }

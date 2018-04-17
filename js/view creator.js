@@ -25,6 +25,7 @@ function addElement(name, handler)
             children:  []
         }
 
+        element.reference.element = element
         this.elements.push(element)
 
         var handlerCall = 'handler('

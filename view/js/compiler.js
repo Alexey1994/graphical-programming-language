@@ -78,7 +78,7 @@ var functions = [
 var currentConstant
 var currentFunction = functions[0]
 var currentFunctionInCustomTranslateMode = false
-var translateFunctionCall = "//call\nvar address = (combination.beginAddress - call.beginAddress - 4 + 1) & 65535\n\nout.write(0xE8);\n    out.write(address % 256); out.write((address / 256) % 256);\nout.write(0x50);\n\n//jump\nif(typeof call.branch !== 'undefined'){\n    address = (body[call.branch].beginAddress - out.address - 7) & 65535\n\n    out.write(0x83); out.write(0xF8); //cmp ax, 0\n        out.write(0x00);\n                                \n    out.write(0x0F); out.write(0x84); //je address\n        out.write(address % 256); out.write((address / 256) % 256);\n}" //call 0x00; push ax
+var translateFunctionCall = "//call\nvar address = (combination.beginAddress - out.address- 4 + 1) & 65535\nout.write(0xE8);\n    out.write(address % 256); out.write((address / 256) % 256);\nout.write(0x50);\n\n//jump\nif(typeof call.branch !== 'undefined'){\n    address = (body[call.branch].beginAddress - out.address - 7) & 65535\n\n    out.write(0x83); out.write(0xF8); //cmp ax, 0\n        out.write(0x00);\n                                \n    out.write(0x0F); out.write(0x84); //je address\n        out.write(address % 256); out.write((address / 256) % 256);\n}" //call 0x00; push ax
 
 
 function functionIndex(f)

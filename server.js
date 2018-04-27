@@ -43,6 +43,9 @@ function calculateAddresses(program){
 
             combination.beginAddress = output.address
 
+            output.write(0x55); //push bp
+            output.write(0x89); output.write(0xE5); //mov bp, sp
+
             for(var k in body){
                 var call = body[k]
 
@@ -86,25 +89,6 @@ function calculateAddresses(program){
                     else{
                         function f(out, arguments, call, combination, body){
                             eval(combination.translate)
-/*
-                            //call
-                            var address = (combination.beginAddress - call.beginAddress - 4 + 1) & 65535
-
-                            out.write(0xE8);
-                                out.write(address % 256); out.write((address / 256) % 256);
-                            out.write(0x50);
-
-                            //jump
-                            if(typeof call.branch !== 'undefined'){
-                                address = (body[call.branch].beginAddress - out.address - 7) & 65535
-
-                                out.write(0x83); out.write(0xF8); //cmp ax, 0
-                                    out.write(0x00);
-                                
-                                out.write(0x0F); out.write(0x84); //je address
-                                    out.write(address % 256); out.write((address / 256) % 256);
-                            }
-*/
                         }
 
                         f(output, arguments, call, combination, body)
@@ -118,6 +102,9 @@ function calculateAddresses(program){
 
                 translateCall(call)
             }
+
+            output.write(0x5D); //pop bp
+            output.write(0xC3); //ret
 
             combination.endAddress = output.address
         }
@@ -133,6 +120,9 @@ function compile(functions, output){
         for(var j in combinations){
             var combination = combinations[j]
             var body = combination.body
+
+            output.write(0x55); //push bp
+            output.write(0x89); output.write(0xE5); //mov bp, sp
 
             for(var k in body){
                 var call = body[k]
@@ -175,25 +165,6 @@ function compile(functions, output){
                     else{
                         function f(out, arguments, call, combination, body){
                             eval(combination.translate)
-/*
-                            //call
-                            var address = (combination.beginAddress - call.beginAddress - 4 + 1) & 65535
-
-                            out.write(0xE8);
-                                out.write(address % 256); out.write((address / 256) % 256);
-                            out.write(0x50);
-
-                            //jump
-                            if(typeof call.branch !== 'undefined'){
-                                address = (body[call.branch].beginAddress - out.address - 7) & 65535
-
-                                out.write(0x83); out.write(0xF8); //cmp ax, 0
-                                    out.write(0x00);
-                                
-                                out.write(0x0F); out.write(0x84); //je address
-                                    out.write(address % 256); out.write((address / 256) % 256);
-                            }
-*/
                         }
 
                         f(output, arguments, call, combination, body)
@@ -205,6 +176,9 @@ function compile(functions, output){
 
                 translateCall(call)
             }
+
+            output.write(0x5D); //pop bp
+            output.write(0xC3); //ret
         }
     }
 

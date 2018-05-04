@@ -6,28 +6,15 @@ var types = []
 var constants = []
 
 var primitiveTypes = [
-    {
-        name: 'массив бит'
-    },
-
-    {
-        name: 'адрес'
-    },
-
-    {
-        name: 'функция'
-    },
-
-    {
-        name: 'вложенный тип'
-    }
+    {name: 'массив бит'},
+    {name: 'адрес'},
+    {name: 'вложенный тип'}
 ]
 
 var functions = [
     {
         name: 'старт программы',
         arguments: [],
-        variables: [],
         combinations: [
             {
                 combination: [],
@@ -37,8 +24,6 @@ var functions = [
             }
         ],
         currentCombination: 0
-        //,
-        //body: []
     }/*,
 
     {
@@ -81,10 +66,23 @@ var currentFunctionInCustomTranslateMode = false
 var translateFunctionCall = "//call\nvar address = (combination.beginAddress - out.address- 4 + 1) & 65535\nout.write(0xE8);\n    out.write(address % 256); out.write((address / 256) % 256);\nout.write(0x50);\n\n//jump\nif(typeof call.branch !== 'undefined'){\n    address = (body[call.branch].beginAddress - out.address - 7) & 65535\n\n    out.write(0x83); out.write(0xF8); //cmp ax, 0\n        out.write(0x00);\n                                \n    out.write(0x0F); out.write(0x84); //je address\n        out.write(address % 256); out.write((address / 256) % 256);\n}" //call 0x00; push ax
 
 
-function functionIndex(f)
-{
+function functionIndex(f){
     for(var i=0; i<functions.length; ++i)
         if(functions[i] == f)
+            return i
+}
+
+
+function variableIndex(combination, variable){
+    for(var i=0; i<combination.variables.length; ++i)
+        if(combination.variables[i] == variable)
+            return i
+}
+
+
+function constantIndex(constant){
+    for(var i=0; i<constants.length; ++i)
+        if(constants[i] == constant)
             return i
 }
 
@@ -96,14 +94,12 @@ function typeIndex(type){
 }
 
 
-function get_combination(f)
-{
+function get_combination(f){
     return f.combinations[f.currentCombination]
 }
 
 
-function allAllowedFunctions(f, argumentNumber)
-{
+function allAllowedFunctions(f, argumentNumber){
     var allowedFunctions = []
 
     for(var i in constants)
@@ -112,8 +108,10 @@ function allAllowedFunctions(f, argumentNumber)
     for(var i in currentFunction.arguments)
         allowedFunctions.push(currentFunction.arguments[i])
 
-    for(var i in currentFunction.variables)
-        allowedFunctions.push(currentFunction.variables[i])
+    var variables = get_combination(currentFunction).variables
+
+    for(var i in variables)
+        allowedFunctions.push(variables[i])
 
     for(var i in functions)
         allowedFunctions.push(functions[i])
@@ -121,62 +119,166 @@ function allAllowedFunctions(f, argumentNumber)
     return allowedFunctions
 }
 
-function drawArgumentSelector(parent, f, selectedArguments, i)
-{
+
+function drawType(parent, type){
     parent
-        .begin()
-            .menu(allAllowedFunctions(f, i), function(f, element)
-            {
-                if(f.isVariable)
-                {
-                    selectedArguments[i] = {
-                        variable: f,
-                        arguments: []
-                    }
+        .label('выбранный тип:')
+        .label(currentType.name)
+        .divider()
 
-                    drawFunction(parent, selectedArguments[i].variable, selectedArguments[i].arguments)
-                }
-                else if(f.isConstant)
-                {
-                    selectedArguments[i] = {
-                        constant: f,
-                        arguments: []
+        .menu(primitiveTypes, function(type){
+            if(type == primitiveTypes[0]){
+                if(!currentType.type || currentType.type.type != type){
+                    currentType.type = {
+                        type:  primitiveTypes[0],
+                        value: 0
                     }
-
-                    drawFunction(parent, selectedArguments[i].constant, selectedArguments[i].arguments)
-                }
-                else
-                {
-                    selectedArguments[i] = {
-                        function: f,
-                        arguments: []
-                    }
-
-                    drawFunction(parent, selectedArguments[i].function, selectedArguments[i].arguments)
                 }
 
                 redraw()
-            })
+            }
+        })
+        .divider()
+        .inner(function(parent){
+            if(!currentType.type)
+                return
+
+            if(currentType.type.type == primitiveTypes[0]){
+                parent
+                    .label('количество бит')
+                    .input_text('0', function(element, event){
+                        var value = parseInt(event.target.value)
+
+                        if(value)
+                            currentType.type.value = value
+                        else
+                            currentType.type.value = 0
+                    })
+
+                parent.structureParent.children[parent.structureParent.children.length - 1].reference.childNodes[0].value = currentType.type.value
+            }
+        })
+}
+
+function drawConstant(parent, constant)
+{
+    parent
+        .label('выбранная константа:')
+        .label(currentConstant.name)
+        .divider()
+
+        .menu(types, function(type){
+            constant.type = type
+            constant.value = null
+
+            redraw()
+        })
+
+    if(constant.type && constant.type.type){
+        var type = constant.type.type.type
+
+        if(type == primitiveTypes[0]){
+            parent
+                .divider()
+                .label('значение')
+                .input_text('0', function(element, event){
+                    var value = parseInt(event.target.value)
+
+                    if(value)
+                        constant.value = value
+                    else
+                        constant.value = 0
+                })
+
+            if(constant.value)
+                parent.structureParent.children[parent.structureParent.children.length - 1].reference.childNodes[0].value = constant.value
+        }
+    }
+}
+
+
+function drawVariable(parent, variable){
+    parent
+        .variable(
+            variable.name,
+            
+            function(){
+
+            },
+
+            function(){
+
+            }
+        )
+}
+
+
+function drawConstantConstant(parent, constant){
+    parent
+        .constant(
+            constant.name,
+            
+            function(){
+
+            },
+
+            function(){
+
+            }
+        )
+}
+
+
+function drawArgumentSelector(parent, f, selectedArguments, i){
+    parent
+        .begin()
+            .argument_menu(
+                constants,
+                function(constant){
+
+                    selectedArguments[i] = {
+                        constant: constant
+                    }
+
+                    redraw()
+                },
+
+                get_combination(currentFunction).variables,
+                function(variable){
+                    selectedArguments[i] = {
+                        variable: variable
+                    }
+
+                    redraw()
+                },
+
+                functions,
+                function(f){
+                    selectedArguments[i] = {
+                        function: f,
+                        arguments: [] //?
+                    }
+
+                    redraw()
+                }
+            )
         .end()
 }
 
-function drawArgument(parent, f, argumentDescription, selectedArguments, i)
-{
+function drawArgument(parent, f, argumentDescription, selectedArguments, i){
     parent
         .argument(argumentDescription.label, function(argumentElement){
             console.log(argumentElement)
         })
         .begin()
-            .inner(function(argumentBody)
-            {
-                if(selectedArguments[i] && functionIndex(selectedArguments[i].function))
-                {
+            .inner(function(argumentBody){
+                if(selectedArguments[i]){
                     if(selectedArguments[i].function)
                         drawFunction(argumentBody, selectedArguments[i].function, selectedArguments[i].arguments)
+                    else if(selectedArguments[i].variable)
+                        drawVariable(argumentBody, selectedArguments[i].variable)
                     else if(selectedArguments[i].constant)
-                        drawFunction(argumentBody, selectedArguments[i].constant, selectedArguments[i].arguments)
-                    else
-                        drawFunction(argumentBody, selectedArguments[i].variable, selectedArguments[i].arguments)
+                        drawConstantConstant(argumentBody, selectedArguments[i].constant)
                 }
                 else
                     drawArgumentSelector(argumentBody.cell(), f, selectedArguments, i)
@@ -184,8 +286,7 @@ function drawArgument(parent, f, argumentDescription, selectedArguments, i)
         .end()
 }
 
-function drawFunction(parent, f, selectedArguments)
-{
+function drawFunction(parent, f, selectedArguments){
     parent
         .function(
             f.name,
@@ -201,8 +302,7 @@ function drawFunction(parent, f, selectedArguments)
         .begin()
             .arguments()
             .begin()
-                .inner(function(argumentsBody)
-                {
+                .inner(function(argumentsBody){
                     for(var i in f.arguments)
                         drawArgument(argumentsBody, f, f.arguments[i], selectedArguments, i)
                 })
@@ -212,16 +312,13 @@ function drawFunction(parent, f, selectedArguments)
 
 
 
-function drawArrows()
-{
+function drawArrows(){
     var arrows = []
 
-    for(var i in get_combination(currentFunction).body)
-    {
+    for(var i in get_combination(currentFunction).body){
         var currentCall = get_combination(currentFunction).body[i]
 
-        if(typeof(currentCall.branch) == 'number')
-        {
+        if(typeof(currentCall.branch) == 'number'){
             arrows.push({
                 from: {
                     x: currentCall.branchSelector.offsetTop + currentCall.branchSelector.clientHeight / 2,
@@ -243,8 +340,7 @@ function drawArrows()
 
     clearCanvas(canvasContext)
 
-    for(var i=0; i<arrows.length; ++i)
-    {
+    for(var i=0; i<arrows.length; ++i){
         var arrow = arrows[i]
         
         drawLine(canvasContext, canvasContext.canvas.width, arrow.from.y, canvasContext.canvas.width - 20*(i+1), arrow.from.y)
@@ -255,92 +351,12 @@ function drawArrows()
     }
 }
 
-function drawType(parent, type)
-{
-    parent
-        .menu(primitiveTypes, function(type)
-        {
-            if(type == primitiveTypes[0])
-            {
-                if(!currentType.type || currentType.type.type != type)
-                {
-                    currentType.type = {
-                        type:  primitiveTypes[0],
-                        value: 0
-                    }
-                }
 
-                redraw()
-            }
-        })
-        .divider()
-        .inner(function(parent)
-        {
-            if(!currentType.type)
-                return
-
-            if(currentType.type.type == primitiveTypes[0])
-            {
-                parent
-                    .label('количество бит')
-                    .input_text('0', function(element, event)
-                    {
-                        var value = parseInt(event.target.value)
-
-                        if(value)
-                            currentType.type.value = value
-                        else
-                            currentType.type.value = 0
-                    })
-
-                parent.structureParent.children[parent.structureParent.children.length - 1].reference.childNodes[0].value = currentType.type.value
-            }
-        })
-}
-
-function drawConstant(parent, constant)
-{
-    parent
-        .menu(types, function(type)
-        {
-            constant.type = type
-            constant.value = null
-
-            redraw()
-        })
-
-    if(constant.type && constant.type.type)
-    {
-        var type = constant.type.type.type
-
-        if(type == primitiveTypes[0])
-        {
-            parent
-                .divider()
-                .label('значение')
-                .input_text('0', function(element, event)
-                {
-                    var value = parseInt(event.target.value)
-
-                    if(value)
-                        constant.value = value
-                    else
-                        constant.value = 0
-                })
-
-            if(constant.value)
-                parent.structureParent.children[parent.structureParent.children.length - 1].reference.childNodes[0].value = constant.value
-        }
-    }
-}
-
-function drawProgram(parent, program)
-{
+function drawProgram(parent, program){
     parent
         .cell()
         .begin()
-            .inner(function(parent)
-            {
+            .inner(function(parent){
                 var ref = parent.structureParent.reference
                 var canvas = document.createElement('canvas')
                 var style = canvas.style
@@ -362,8 +378,7 @@ function drawProgram(parent, program)
         .begin()
             .block()
             .begin()
-                .menu(functions, function(f)
-                {
+                .menu(functions, function(f){
                     program.unshift({
                         function: f,
                         functionIndex: functionIndex(f),
@@ -373,10 +388,8 @@ function drawProgram(parent, program)
                     redraw()
                 })
             .end()
-            .inner(function(parent)
-            {
-                get_combination(currentFunction).body.forEach(function(f, i)
-                {
+            .inner(function(parent){
+                get_combination(currentFunction).body.forEach(function(f, i){
                     if(!f || !functionIndex(f.function))
                         return
 
@@ -385,21 +398,17 @@ function drawProgram(parent, program)
                     parent
                         .block()
                         .begin()
-                            .inner(function(functionBody)
-                            {
+                            .inner(function(functionBody){
                                 f.branchSelector = functionBody.structureParent.reference
 
                                 functionBody
-                                    .branch_selector(f, function()
-                                    {
-                                        if(currentBranchSelector)
-                                        {
+                                    .branch_selector(f, function(){
+                                        if(currentBranchSelector){
                                             currentBranchSelector.branch = f.index
                                             drawArrows()
                                             currentBranchSelector = null
                                         }
-                                        else
-                                        {
+                                        else{
                                             currentBranchSelector = f
                                             currentBranchSelector.branch = null
                                             drawArrows()
@@ -417,8 +426,7 @@ function drawProgram(parent, program)
                         .begin()
                             .cell()
                             .begin()
-                            .menu(functions, function(f, index)
-                            {
+                            .menu(functions, function(f, index){
                                 program.splice( i+1, 0, {
                                     function:      f,
                                     functionIndex: functionIndex(f),
@@ -437,10 +445,191 @@ function drawProgram(parent, program)
 }
 
 
-function redraw()
-{
+function drawCurrentFunction(programBody, currentFunction){
+    programBody
+        .inner(function(parent){
+            parent
+                .label('выбранная функция:')
+                .label(currentFunction.name)
+
+                .inner_block()
+                .begin()
+                    .label('аргументы:')
+                    .list()
+                    .begin()
+                        .inner(function(parent){
+                            currentFunction.arguments.forEach(function(argument, i){
+                                parent
+                                    .function(
+                                        argument.label + ' ' + argument.name,
+
+                                        function(){
+                                            console.log(argument)
+                                        },
+
+                                        function(){
+
+                                        }
+                                    )
+                            })
+                        })
+                    .end()
+
+                    .block()
+                    .begin()
+                        .inner(function(parent){
+                            var newArgumentDescription = ''
+                            var newArgumentName = 'без имени'
+
+                            parent
+                                .input_text('описание аргумента', function(element, event){
+                                    newArgumentDescription = element.text
+                                })
+                                .input_text('имя аргумента', function(element, event){
+                                    newArgumentName = element.text
+                                })
+                                .button('добавить аргумент', function(element, event){
+                                    currentFunction.arguments.push({
+                                        label: newArgumentDescription,
+                                        name:  newArgumentName
+                                    })
+
+                                    for(var i in currentFunction.combinations){
+                                        var currentCombination = currentFunction.combinations[i]
+
+                                        currentCombination.combination.push(undefined)
+                                    }
+
+                                    redraw()
+                                })
+                        })
+                    .end()
+                .end()
+        })
+        .window_divider()
+
+        .label('комбинации типов аргументов')
+        .divider()
+        .inner(function(parent){
+            currentFunction.combinations.forEach(function(currentCombination, i){
+                if(currentFunction.currentCombination == i)
+                    parent
+                        .label('->')
+
+                parent
+                    .button('выбрать комбинацию', function(){
+                        currentFunction.currentCombination = i
+                        redraw()
+                    })
+                    .inner(function(parent){
+                        currentCombination.combination.forEach(function(currentArgumentCombination, i){
+                            if(typeof(currentArgumentCombination) == 'undefined' || currentArgumentCombination === null){
+                                parent
+                                    .label(currentFunction.arguments[i].name)
+                                    .menu(types, function(type){
+                                        currentCombination.combination[i] = type
+                                        redraw()
+                                    })
+                            }
+                            else{
+                                parent
+                                    .label(currentFunction.arguments[i].name + ':')
+                                    .label(currentArgumentCombination.name)
+                                    .menu(types, function(){
+
+                                    })
+                            }
+                    })
+                })
+                .button('удалить комбинацию', function(){
+
+                })
+                .divider()
+            })
+
+            parent
+                .button('новая комбинация', function(){
+                    var newCombination = {
+                        combination: [],
+                        variables: [],
+                        body: [],
+                        translate: translateFunctionCall
+                    }
+
+                    for(var i=0; i<currentFunction.arguments.length; ++i)
+                        newCombination.combination.push(undefined)
+
+                    currentFunction.combinations.push(newCombination)
+
+                    redraw()
+                })
+        })
+
+        .window_divider()
+        .inner_block()
+        .begin()
+            .label('переменные:')
+            .list()
+            .begin()
+                .inner(function(parent){
+                    get_combination(currentFunction).variables.forEach(function(variable, i){
+                        parent
+                            .function(
+                                variable.name,
+
+                                function(){
+                                    console.log(variable)
+                                },
+
+                                function(){
+
+                                }
+                            )
+                    })
+                })
+            .end()
+
+            .block()
+            .begin()
+                .inner(function(parent){
+                    var newVariableName = 'без имени'
+
+                    parent
+                        .input_text('имя переменной', function(element, event){
+                            newVariableName = element.text
+                        })
+                        .button('добавить переменную', function(element, event){
+                            get_combination(currentFunction).variables.push({
+                                name: newVariableName
+                            })
+
+                            redraw()
+                        })
+                })
+            .end()
+        .end()
+        .window_divider()
+
+        .checkbox(get_combination(currentFunction).currentFunctionInCustomTranslateMode, function(state){
+            get_combination(currentFunction).currentFunctionInCustomTranslateMode = state
+            redraw()
+        })
+        .label('текстовый режим')
+        .window_divider()
+
+        if(get_combination(currentFunction).currentFunctionInCustomTranslateMode){
+            programBody
+                .text_input(get_combination(currentFunction).translate, function(text){
+                    get_combination(currentFunction).translate = text
+                })
+        }
+        else
+            drawProgram(programBody, get_combination(currentFunction).body)
+}
+
+
+function redraw(){
     draw()
-        
         .divider()
         .begin()
             .inner_block()
@@ -448,13 +637,10 @@ function redraw()
                 .label('типы:')
                 .list()
                 .begin()
-                    .inner(function(parent)
-                    {
-                        types.forEach(function(type, i)
-                        {
+                    .inner(function(parent){
+                        types.forEach(function(type, i){
                             parent
-                                .type(type.name, function()
-                                {
+                                .type(type.name, function(){
                                     currentType = type
                                     currentConstant = null
                                     currentFunction = null
@@ -466,19 +652,21 @@ function redraw()
 
                 .block()
                 .begin()
-                    .input_text('имя типа', function(element, event)
-                    {
-                        //console.log(element)
-                        //console.log(event)
-                    })
-                    .button('добавить тип', function(element, event)
-                    {
-                        types.push({
-                            name:      element.parent.children[0].text,
-                            structure: []
-                        })
+                    .inner(function(parent){
+                        var newTypeName = 'без имени'
 
-                        redraw()
+                        parent
+                            .input_text('имя типа', function(element, event){
+                                newTypeName = element.text
+                            })
+                            .button('добавить тип', function(element, event){
+                                types.push({
+                                    name:      newTypeName,
+                                    structure: []
+                                })
+
+                                redraw()
+                            })
                     })
                 .end()
             .end()
@@ -488,10 +676,8 @@ function redraw()
                 .label('константы:')
                 .list()
                 .begin()
-                    .inner(function(parent)
-                    {
-                        constants.forEach(function(constant, i)
-                        {
+                    .inner(function(parent){
+                        constants.forEach(function(constant, i){
                             parent
                                 .constant(
                                     constant.name,
@@ -507,21 +693,26 @@ function redraw()
 
                                     }
                                 )
-                                //.label(variable.name)
                         })
                     })
                 .end()
 
                 .block()
                 .begin()
-                    .input_text('имя константы', function(element, event){})
-                    .button('добавить константу', function(element, event)
-                    {
-                        constants.push({
-                            name: element.parent.children[0].text
-                        })
+                    .inner(function(parent){
+                        var newConstantName = 'без имени'
 
-                        redraw()
+                        parent
+                            .input_text('имя константы', function(element, event){
+                                newConstantName = element.text
+                            })
+                            .button('добавить константу', function(element, event){
+                                constants.push({
+                                    name: newConstantName
+                                })
+
+                                redraw()
+                            })
                     })
                 .end()
             .end()
@@ -531,10 +722,8 @@ function redraw()
                 .label('функции:')
                 .list()
                 .begin()
-                    .inner(function(parent)
-                    {
-                        function selectFunction(f)
-                        {
+                    .inner(function(parent){
+                        function selectFunction(f){
                             parent
                                 .function(
                                     f.name,
@@ -564,198 +753,48 @@ function redraw()
 
                 .block()
                 .begin()
-                    .input_text('имя функции', function(element, event)
-                    {
-                        //console.log(element)
-                        //console.log(event)
-                    })
-                    .button('добавить функцию', function(element, event)
-                    {
-                        functions.push({
-                            name:      element.parent.children[0].text,
-                            arguments: [],
-                            variables: [],
-                            combinations: [
-                                {
-                                    combination: [],
+                    .inner(function(parent){
+                        var newFunctionName = 'без имени'
+
+                        parent
+                            .input_text('имя функции', function(element, event){
+                                newFunctionName = element.text
+                            })
+                            .button('добавить функцию', function(element, event){
+                                functions.push({
+                                    name:      newFunctionName,
+                                    arguments: [],
                                     variables: [],
-                                    body: [],
-                                    translate: translateFunctionCall
-                                }
-                            ],
-                            currentCombination: 0
-                            //body:      [],
-                            //translate: translateFunctionCall
-                        })
-                        redraw()
+                                    combinations: [
+                                        {
+                                            combination: [],
+                                            variables: [],
+                                            body: [],
+                                            translate: translateFunctionCall
+                                        }
+                                    ],
+                                    currentCombination: 0
+                                })
+
+                                redraw()
+                            })
                     })
                 .end()
             .end()
 
-            .inner(function(parent)
-            {
-                if(currentFunction)
-                {
-                    parent
-                        .inner_block()
-                        .begin()
-                            .block()
-                            .begin()
-                                .label('выбранная функция:')
-                                .label(currentFunction.name)
-                            .end()
-                        .end()
-
-                        .inner_block()
-                        .begin()
-                            .label('аргументы:')
-                            .list()
-                            .begin()
-                                .inner(function(parent)
-                                {
-                                    currentFunction.arguments.forEach(function(argument, i)
-                                    {
-                                        parent
-                                            .function(
-                                                argument.label + ' ' + argument.name,
-
-                                                function(){
-                                                    console.log(argument)
-                                                },
-
-                                                function(){
-
-                                                }
-                                            )
-                                            //.label(variable.name)
-                                    })
-                                })
-                            .end()
-
-                            .block()
-                            .begin()
-                                .input_text('описание аргумента', function(element, event)
-                                {
-                                    //console.log(element)
-                                    //console.log(event)
-                                })
-                                .input_text('имя аргумента', function(element, event)
-                                {
-                                    //console.log(element)
-                                    //console.log(event)
-                                })
-                                .button('добавить аргумент', function(element, event)
-                                {
-                                    currentFunction.arguments.push({
-                                        label: element.parent.children[0].text,
-                                        name:  element.parent.children[1].text
-                                    })
-
-                                    for(var i in currentFunction.combinations)
-                                    {
-                                        var currentCombination = currentFunction.combinations[i]
-
-                                        currentCombination.combination.push(undefined)
-                                    }
-
-                                    redraw()
-                                })
-                            .end()
-                        .end()
-
-                        .inner_block()
-                        .begin()
-                            .label('переменные:')
-                            .list()
-                            .begin()
-                                .inner(function(parent)
-                                {
-                                    currentFunction.variables.forEach(function(variable, i)
-                                    {
-                                        parent
-                                            .function(
-                                                variable.name,
-
-                                                function(){
-                                                    console.log(variable)
-                                                },
-
-                                                function(){
-
-                                                }
-                                            )
-                                            //.label(variable.name)
-                                    })
-                                })
-                            .end()
-
-                            .block()
-                            .begin()
-                                .input_text('имя переменной', function(element, event)
-                                {
-                                    //console.log(element)
-                                    //console.log(event)
-                                })
-                                .button('добавить переменную', function(element, event)
-                                {
-                                    currentFunction.variables.push({
-                                        name: element.parent.children[0].text
-                                    })
-                                    redraw()
-                                })
-                            .end()
-                        .end()
-                }
-                else if(currentConstant)
-                {
-                    parent
-                        .inner_block()
-                        .begin()
-                            .block()
-                            .begin()
-                                .label('выбранная константа:')
-                                .label(currentConstant.name)
-                            .end()
-                        .end()
-                }
-                else if(currentType)
-                {
-                    parent
-                        .inner_block()
-                        .begin()
-                            .block()
-                            .begin()
-                                .label('выбранный тип:')
-                                .label(currentType.name)
-                            .end()
-                        .end()
-                }
-            })
-            
-            .divider()
             .inner_block()
             .begin()
-                .inner(function(parent)
-                {
-                    if(currentFunction)
-                        parent
-                            .checkbox(get_combination(currentFunction).currentFunctionInCustomTranslateMode, function(state)
-                            {
-                                get_combination(currentFunction).currentFunctionInCustomTranslateMode = state
-                                redraw()
-                            })
-                })
                 .button('Сохранить', function(){
-                    console.log(types)
-                    var program = serialize(types, functions)
+                    var program = serialize(types, constants, functions)
+
+                    console.log(program)
 
                     send('/save', JSON.stringify(program), function(){
 
                     })
                 })
-                .button('Компилировать', function()
-                {
-                    var program = serialize(types, functions)
+                .button('Компилировать', function(){
+                    var program = serialize(types, constants, functions)
                     console.log(functions)
                     console.log(program)
 
@@ -769,110 +808,18 @@ function redraw()
         .window_divider()
 
         .divider()
-        .begin()
-            .inner(function(programBody)
-            {
-                if(currentFunction)
-                {
-                    if(get_combination(currentFunction).currentFunctionInCustomTranslateMode)
-                    {
-                        programBody
-                            .text_input(get_combination(currentFunction).translate, function(text){
-                                get_combination(currentFunction).translate = text
-                            })
-                    }
-                    else
-                    {
-                        programBody
-                            .inner(function(parent)
-                            {
-                                currentFunction.combinations.forEach(function(currentCombination, i)
-                                {
-                                    parent
-                                        .button('выбрать комбинацию', function()
-                                        {
-                                            currentFunction.currentCombination = i
-                                            redraw()
-                                        })
-                                        .inner(function(parent)
-                                        {
-                                            currentCombination.combination.forEach(function(currentArgumentCombination, i)
-                                            {
-                                                if(typeof(currentArgumentCombination) == 'undefined' || currentArgumentCombination === null)
-                                                {
-                                                    parent
-                                                        .label(currentFunction.arguments[i].name)
-                                                        .menu(types, function(type)
-                                                        {
-                                                            currentCombination.combination[i] = type
-                                                            redraw()
-                                                        })
-                                                }
-                                                else
-                                                {
-                                                    parent
-                                                        .label(currentFunction.arguments[i].name + ':')
-                                                        .label(currentArgumentCombination.name)
-                                                        .menu(types, function()
-                                                        {
-
-                                                        })
-                                                }
-                                            })
-                                        })
-                                        .button('удалить комбинацию', function()
-                                        {
-
-                                        })
-                                        .divider()
-                                })
-
-                                parent
-                                    .divider()
-                                    .button('новая комбинация', function()
-                                    {
-                                        var newCombination = {
-                                            combination: [],
-                                            body: [],
-                                            translate: translateFunctionCall
-                                        }
-
-                                        for(var i=0; i<currentFunction.arguments.length; ++i)
-                                            newCombination.combination.push(undefined)
-
-                                        currentFunction.combinations.push(newCombination)
-
-                                        redraw()
-                                    })
-                                    .divider()
-
-                                drawProgram(programBody, get_combination(currentFunction).body)
-                            })
-                    }
-                }
-                else if(currentConstant)
-                {
-                    drawConstant(programBody, currentConstant)
-                }
-                else if(currentType)
-                {
-                    drawType(programBody, currentType)
-                }
-            })
-        .end()
-
-    drawArrows()
+        .inner(function(programBody){
+            if(currentFunction)
+                drawCurrentFunction(programBody, currentFunction)
+            else if(currentConstant)
+                drawConstant(programBody, currentConstant)
+            else if(currentType)
+                drawType(programBody, currentType)
+        })
 }
 
 
-window.onload = function()
-{
-    redraw()
-}
-
-
-document.addEventListener('contextmenu', function(event)
-{
+document.addEventListener('contextmenu', function(event){
     var element = event.target.element
 
     if(element && element.onmouseright){
@@ -883,6 +830,8 @@ document.addEventListener('contextmenu', function(event)
 
 
 function deserialize(functions){
+    //var currentCombination
+
     function deserializeCombination(combination){
         var newCombination = []
 
@@ -900,9 +849,8 @@ function deserialize(functions){
 
             newCombinations.push({
                 combination: deserializeCombination(currentCombination.combination),
-                //body: [],//deserializeCombinationBody(currentCombination.body),
                 translate: currentCombination.translate,
-                variables: []
+                variables: currentCombination.variables
             })
         }
 
@@ -916,8 +864,7 @@ function deserialize(functions){
 
         newFunctions.push({
             name: currentFunction.name,
-            arguments: currentFunction.arguments,//[],
-            variables: [],//del, должны быть у комбинации
+            arguments: currentFunction.arguments,
             currentCombination: 0,
             combinations: deserializeCombinations(currentFunction.combinations)
         })
@@ -928,10 +875,23 @@ function deserialize(functions){
 
         for(var i in arguments){
             var currentArgument = arguments[i]
+            var newArgument
 
-            var newArgument = {
-                function: newFunctions[currentArgument.functionIndex],
-                arguments: deserializeArguments(currentArgument.arguments)
+            if(typeof currentArgument.functionIndex !== 'undefined'){
+                newArguments.push({
+                    function: newFunctions[currentArgument.functionIndex],
+                    arguments: deserializeArguments(currentArgument.arguments)
+                })
+            }
+            else if(typeof currentArgument.variableIndex !== 'undefined'){
+                newArguments.push({
+                    variable: currentCombination.variables[currentArgument.variableIndex]
+                })
+            }
+            else if(typeof currentArgument.constantIndex !== 'undefined'){
+                newArguments.push({
+                    constant: constants[currentArgument.constantIndex]
+                })
             }
 
             newArguments.push(newArgument)
@@ -962,22 +922,16 @@ function deserialize(functions){
 
         for(var j in currentFunction.combinations){
             var currentCombination = currentFunction.combinations[j]
-//console.log(functions[i].combinations[j])
+
             currentCombination.body = deserializeCombinationBody(functions[i].combinations[j].body)
         }
-/*
-        newFunctions.push({
-            name: currentFunction.name,
-            currentCombination: 0,
-            combinations: deserializeCombinations(currentFunction.combinations)
-        })*/
     }
-//console.log(newFunctions)
+
     return newFunctions
 }
 
 
-function serialize(types, functions){
+function serialize(types, constants, functions){
     var newFunctions = []
 
     function serializeVariables(variables){
@@ -987,8 +941,7 @@ function serialize(types, functions){
             var currentVariable = variables[i]
 
             newVariables.push({
-                name: currentVariable.name,
-                type: 'variable'
+                name: currentVariable.name
             })
         }
 
@@ -1009,7 +962,7 @@ function serialize(types, functions){
         return newArguments
     }
 
-    function serializeBody(body){
+    function serializeBody(combination, body){
         var newBody = []
 
         for(var i in body){
@@ -1017,9 +970,8 @@ function serialize(types, functions){
             var newCall = {}
             var newArguments = newCall.arguments
 
-            if(typeof(currentCall.branch) == 'number'){
+            if(typeof(currentCall.branch) == 'number')
                 newCall.branch = currentCall.branch
-            }
 
             newCall.functionIndex = currentCall.functionIndex
 
@@ -1029,10 +981,22 @@ function serialize(types, functions){
                 for(var i in arguments){
                     var currentArgument = arguments[i]
 
-                    newArguments.push({
-                        functionIndex: functionIndex(currentArgument.function),
-                        arguments: serializeArguments(currentArgument.arguments) //[]
-                    })
+                    if(currentArgument.function){
+                        newArguments.push({
+                            functionIndex: functionIndex(currentArgument.function),
+                            arguments: serializeArguments(currentArgument.arguments)
+                        })
+                    }
+                    else if(currentArgument.variable){
+                        newArguments.push({
+                            variableIndex: variableIndex(combination, currentArgument.variable)
+                        })
+                    }
+                    else if(currentArgument.constant){
+                        newArguments.push({
+                            constantIndex: constantIndex(currentArgument.constant)
+                        })
+                    }
                 }
 
                 return newArguments
@@ -1071,17 +1035,14 @@ function serialize(types, functions){
             combinations: []
         }
 
-        for(var j in currentFunction.combinations)
-        {
+        for(var j in currentFunction.combinations){
             var currentCombination = currentFunction.combinations[j]
 
             newFunction.combinations.push({
-                //name:      i,
-                //arguments: currentCombination.arguments,
+                variables:   serializeVariables(currentCombination.variables),
                 combination: serializeCombination(currentCombination.combination),
-                //variables: serializeVariables(currentCombination.variables),
-                body:      serializeBody(currentCombination.body),
-                translate: serializeTranslate(currentCombination.translate)
+                body:        serializeBody(currentCombination, currentCombination.body),
+                translate:   serializeTranslate(currentCombination.translate)
             })
         }
 
@@ -1090,17 +1051,23 @@ function serialize(types, functions){
 
     return {
         types: types,
+        constants: constants,
         functions: newFunctions
     }
 }
 
-get('/load', function(data){
-    //console.log(deserialize(JSON.parse(data)))
-    var program = JSON.parse(data)
 
-    types = program.types
-    functions = deserialize(program.functions)
-    currentFunction = functions[0]
-    console.log(functions)
-    redraw()
-})
+window.onload = function(){
+    get('/load', function(data){
+        //console.log(deserialize(JSON.parse(data)))
+        var program = JSON.parse(data)
+
+        types = program.types
+        constants = program.constants
+        functions = deserialize(program.functions)
+        
+        currentFunction = functions[0]
+        //console.log(functions)
+        redraw()
+    })
+}

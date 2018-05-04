@@ -1,6 +1,7 @@
 constant
 {
     display:          block;
+    margin-bottom:    7px;
 }
 
 constant_name
@@ -9,4 +10,10 @@ constant_name
     padding:          10px;
     background-color: #c5c73c;
     box-shadow:       3px 3px 6px 0px #7d7d7d;
+}
+
+constant_name: hover
+{
+    cursor:           pointer;
+    background-color: #aaf;
 }

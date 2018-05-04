@@ -1,0 +1,46 @@
+argument_menu
+{
+    position:         relative;
+    display:          inline-block;
+    width:            20px;
+    height:           20px;
+    margin-bottom:    1px;
+    vertical-align:   middle;
+    background-color: #d6d6d6;
+}
+
+argument_menu block
+{
+    position:         absolute;
+    min-width:        400px;
+    z-index:          1;
+    border:           1px solid #666;
+    background-color: #fff;
+}
+
+argument_menu block inner_block
+{
+    min-width:        100px;
+}
+
+argument_menu block block
+{
+    position:         relative;
+    display:          block;
+    min-width:        unset;
+    max-height:       400px;
+    overflow-y:       auto;
+    z-index:          unset;
+    border:           none;
+}
+
+argument_menu block block label
+{
+    display:          block;
+}
+
+argument_menu block block label:hover
+{
+    cursor:           pointer;
+    background-color: #aaa;
+}

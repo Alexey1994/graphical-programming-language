@@ -4,8 +4,6 @@ addElement('argument', function(name, onmouseright, element)
         .argument_name(name)
 
     element.onmouseright = onmouseright
-    console.log(element.onmouseright)
-    //element.reference.innerHTML = name
 })
 
 addElement('argument_name', function(name, element)

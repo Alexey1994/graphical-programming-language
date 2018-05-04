@@ -1,10 +1,20 @@
 function
 {
     display:          table-row;
-    /*padding:          20px;*/
     vertical-align:   middle;
-    /*background-color: #afa;*/
     float:            right;
+}
+
+list function
+{
+    display:          block;
+    float:            none;
+    margin-bottom:    7px;
+}
+
+list function_name
+{
+    display:          block;
 }
 
 function_name

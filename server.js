@@ -25,6 +25,7 @@ function Output(){
 
 function calculateAddresses(program){
     var functions = program.functions
+    var constants = program.constants
 
     var output = {
         address: 0,
@@ -38,18 +39,19 @@ function calculateAddresses(program){
         var combinations = functions[i].combinations
 
         for(var j in combinations){
-            var combination = combinations[j]
-            var body = combination.body
+            var rootCombination = combinations[j]
+            var body = rootCombination.body
 
-            combination.beginAddress = output.address
+            rootCombination.beginAddress = output.address
 
             output.write(0x55); //push bp
             output.write(0x89); output.write(0xE5); //mov bp, sp
+            output.write(0x83); output.write(0xEC); output.write(rootCombination.variables.length * 2); //sub sp, rootCombination.variables.length * 2
 
             for(var k in body){
                 var call = body[k]
 
-                function translateCall(call){
+                function translateFunctionCall(call){
                     call.beginAddress = output.address
 
                     var arguments = call.arguments
@@ -87,11 +89,11 @@ function calculateAddresses(program){
                         return undefined
                     }
                     else{
-                        function f(out, arguments, call, combination, body){
+                        function f(out, arguments, call, rootCombination, combination, body){
                             eval(combination.translate)
                         }
 
-                        f(output, arguments, call, combination, body)
+                        f(output, arguments, call, rootCombination, combination, body)
                     }
 
                     call.endAddress = output.address
@@ -100,34 +102,61 @@ function calculateAddresses(program){
                     return combination.type
                 }
 
+                function translateVariableCall(call){
+                    output.write(0xFF) //push [bp + variableIndex]
+                    output.write(0x76)
+                    output.write((-call.variableIndex * 2) & 0xff)
+
+                    return null
+                    return call.type
+                }
+
+                function translateConstantCall(call){
+                    return null
+                    return call.type
+                }
+
+                function translateCall(call){
+                    if(typeof call.functionIndex !== 'undefined')
+                        return translateFunctionCall(call)
+                    else if(typeof call.variableIndex !== 'undefined')
+                        return translateVariableCall(call)
+                    else if(typeof call.constantIndex !== 'undefined')
+                        return translateConstantCall(call)
+                }
+
                 translateCall(call)
             }
 
+            output.write(0x89); output.write(0xEC); //mov sp, bp
             output.write(0x5D); //pop bp
+            output.write(0x83); output.write(0xC4); output.write(functions[i].arguments.length * 2); //add sp, functions[i].arguments.length * 2
+            output.write(0xA1); output.write(0x00); output.write(0x00); //mov ax, 0
             output.write(0xC3); //ret
 
-            combination.endAddress = output.address
+            rootCombination.endAddress = output.address
         }
     }
 }
 
 
-function compile(functions, output){
+function compile(constants, functions, output){
 
     for(var i in functions){
         var combinations = functions[i].combinations
 
         for(var j in combinations){
-            var combination = combinations[j]
-            var body = combination.body
+            var rootCombination = combinations[j]
+            var body = rootCombination.body
 
             output.write(0x55); //push bp
             output.write(0x89); output.write(0xE5); //mov bp, sp
+            output.write(0x83); output.write(0xEC); output.write(rootCombination.variables.length * 2); //sub sp, rootCombination.variables.length * 2
 
             for(var k in body){
                 var call = body[k]
 
-                function translateCall(call){
+                function translateFunctionCall(call){
                     var arguments = call.arguments
                     var type = []
 
@@ -159,25 +188,62 @@ function compile(functions, output){
                     var combination = getCombination(functions[call.functionIndex], type)
 
                     if(typeof combination == 'undefined'){
-                        console.log('error in ' + functions[call.functionIndex].name)
+                        //console.log('error in ' + functions[call.functionIndex].name)
                         return undefined
                     }
                     else{
-                        function f(out, arguments, call, combination, body){
+                        function f(out, arguments, call, rootCombination, combination, body){
+                            var console = {
+                                log: function(){}
+                            }
+                            
                             eval(combination.translate)
                         }
 
-                        f(output, arguments, call, combination, body)
+                        f(output, arguments, call, rootCombination, combination, body)
                     }
 
                     return null //temporary
                     return combination.type
                 }
 
+                function translateVariableCall(call){
+                    output.write(0xFF) //push [bp + variableIndex]
+                    output.write(0x76)
+                    output.write((-call.variableIndex * 2) & 0xff)
+
+                    //console.log(combination.variables[call.variableIndex])
+
+                    return null
+                    return call.type
+                }
+
+                function translateConstantCall(call){
+                    //output.write(0xFF) //push [bp + variableIndex]
+                    //output.write(0x76)
+                    //output.write((-call.variableIndex * 2) & 0xff)
+                    //console.log(constants[call.constantIndex])
+
+                    return null
+                    return call.type
+                }
+
+                function translateCall(call){
+                    if(typeof call.functionIndex !== 'undefined')
+                        return translateFunctionCall(call)
+                    else if(typeof call.variableIndex !== 'undefined')
+                        return translateVariableCall(call)
+                    else if(typeof call.constantIndex !== 'undefined')
+                        return translateConstantCall(call)
+                }
+
                 translateCall(call)
             }
 
+            output.write(0x89); output.write(0xEC); //mov sp, bp
             output.write(0x5D); //pop bp
+            output.write(0x83); output.write(0xC4); output.write(functions[i].arguments.length * 2); //add sp, functions[i].arguments.length * 2
+            output.write(0xA1); output.write(0x00); output.write(0x00); //mov ax, 0
             output.write(0xC3); //ret
         }
     }
@@ -191,7 +257,7 @@ server.post('/compile', function(request, response){
     var output = new Output()
 
     calculateAddresses(program)
-    compile(program.functions, output)
+    compile(program.constants, program.functions, output)
     output.save('code.bin')
 
     response.send()

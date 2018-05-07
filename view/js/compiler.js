@@ -89,7 +89,14 @@ function constantIndex(constant){
 
 function typeIndex(type){
     for(var i=0; i<types.length; ++i)
-        if(types[i] == type)
+        if(type == types[i])
+            return i
+}
+
+
+function primitiveTypeIndex(primitiveType){
+    for(var i = 0; i < primitiveTypes.length; ++i)
+        if(primitiveType == primitiveTypes[i])
             return i
 }
 
@@ -120,7 +127,7 @@ function allAllowedFunctions(f, argumentNumber){
 }
 
 
-function drawType(parent, type){
+function drawTypeBody(parent, type){
     parent
         .label('выбранный тип:')
         .label(currentType.name)
@@ -160,7 +167,7 @@ function drawType(parent, type){
         })
 }
 
-function drawConstant(parent, constant)
+function drawConstantBody(parent, constant)
 {
     parent
         .label('выбранная константа:')
@@ -202,27 +209,27 @@ function drawVariable(parent, variable){
         .variable(
             variable.name,
             
-            function(){
+            function(event){
 
             },
 
-            function(){
+            function(event){
 
             }
         )
 }
 
 
-function drawConstantConstant(parent, constant){
+function drawConstant(parent, constant){
     parent
         .constant(
             constant.name,
             
-            function(){
+            function(event){
 
             },
 
-            function(){
+            function(event){
 
             }
         )
@@ -278,7 +285,7 @@ function drawArgument(parent, f, argumentDescription, selectedArguments, i){
                     else if(selectedArguments[i].variable)
                         drawVariable(argumentBody, selectedArguments[i].variable)
                     else if(selectedArguments[i].constant)
-                        drawConstantConstant(argumentBody, selectedArguments[i].constant)
+                        drawConstant(argumentBody, selectedArguments[i].constant)
                 }
                 else
                     drawArgumentSelector(argumentBody.cell(), f, selectedArguments, i)
@@ -445,7 +452,7 @@ function drawProgram(parent, program){
 }
 
 
-function drawCurrentFunction(programBody, currentFunction){
+function drawFunctionBody(programBody, currentFunction){
     programBody
         .inner(function(parent){
             parent
@@ -795,8 +802,8 @@ function redraw(){
                 })
                 .button('Компилировать', function(){
                     var program = serialize(types, constants, functions)
-                    console.log(functions)
-                    console.log(program)
+                    //console.log(functions)
+                    //console.log(program)
 
                     send('/compile', JSON.stringify(program), function(){
 
@@ -810,11 +817,11 @@ function redraw(){
         .divider()
         .inner(function(programBody){
             if(currentFunction)
-                drawCurrentFunction(programBody, currentFunction)
+                drawFunctionBody(programBody, currentFunction)
             else if(currentConstant)
-                drawConstant(programBody, currentConstant)
+                drawConstantBody(programBody, currentConstant)
             else if(currentType)
-                drawType(programBody, currentType)
+                drawTypeBody(programBody, currentType)
         })
 }
 
@@ -827,6 +834,42 @@ document.addEventListener('contextmenu', function(event){
         event.preventDefault()
     }
 })
+
+
+function deserializeTypes(types){
+    var newTypes = []
+
+    for(var i in types){
+        var currentType = types[i]
+
+        newTypes.push({
+            name: currentType.name,
+            type: {
+                type: primitiveTypes[ currentType.type.primitiveTypeIndex ],
+                value: currentType.type.value
+            }
+        })
+    }
+
+    return newTypes
+}
+
+
+function deserializeConstants(constants){
+    var newConstants = []
+
+    for(var i in constants){
+        var currentConstant = constants[i]
+
+        newConstants.push({
+            name: currentConstant.name,
+            type: types[ currentConstant.typeIndex ],
+            value: currentConstant.value
+        })
+    }
+
+    return newConstants
+}
 
 
 function deserialize(functions){
@@ -875,7 +918,6 @@ function deserialize(functions){
 
         for(var i in arguments){
             var currentArgument = arguments[i]
-            var newArgument
 
             if(typeof currentArgument.functionIndex !== 'undefined'){
                 newArguments.push({
@@ -893,8 +935,6 @@ function deserialize(functions){
                     constant: constants[currentArgument.constantIndex]
                 })
             }
-
-            newArguments.push(newArgument)
         }
 
         return newArguments
@@ -932,6 +972,40 @@ function deserialize(functions){
 
 
 function serialize(types, constants, functions){
+    function serializeTypes(types){
+        var newTypes = []
+
+        for(var i in types){
+            var currentType = types[i]
+
+            newTypes.push({
+                name: currentType.name,
+                type: {
+                    primitiveTypeIndex: primitiveTypeIndex(currentType.type.type),
+                    value:              currentType.type.value
+                }
+            })
+        }
+
+        return newTypes
+    }
+
+    function serializeConstants(constants){
+        var newConstants = []
+
+        for(var i in constants){
+            var currentConstant = constants[i]
+
+            newConstants.push({
+                name: currentConstant.name,
+                typeIndex: typeIndex(currentConstant.type),
+                value: currentConstant.value
+            })
+        }
+
+        return newConstants
+    }
+
     var newFunctions = []
 
     function serializeVariables(variables){
@@ -1050,8 +1124,8 @@ function serialize(types, constants, functions){
     }
 
     return {
-        types: types,
-        constants: constants,
+        types: serializeTypes(types),
+        constants: serializeConstants(constants),
         functions: newFunctions
     }
 }
@@ -1062,11 +1136,12 @@ window.onload = function(){
         //console.log(deserialize(JSON.parse(data)))
         var program = JSON.parse(data)
 
-        types = program.types
-        constants = program.constants
+        types = deserializeTypes(program.types)
+        constants = deserializeConstants(program.constants)
         functions = deserialize(program.functions)
         
         currentFunction = functions[0]
+        //console.log(program)
         //console.log(functions)
         redraw()
     })

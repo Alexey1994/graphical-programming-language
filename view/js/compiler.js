@@ -63,7 +63,7 @@ var functions = [
 var currentConstant
 var currentFunction = functions[0]
 var currentFunctionInCustomTranslateMode = false
-var translateFunctionCall = "//call\nvar address = (combination.beginAddress - out.address- 4 + 1) & 65535\nout.write(0xE8);\n    out.write(address % 256); out.write((address / 256) % 256);\nout.write(0x50);\n\n//jump\nif(typeof call.branch !== 'undefined'){\n    address = (body[call.branch].beginAddress - out.address - 7) & 65535\n\n    out.write(0x83); out.write(0xF8); //cmp ax, 0\n        out.write(0x00);\n                                \n    out.write(0x0F); out.write(0x84); //je address\n        out.write(address % 256); out.write((address / 256) % 256);\n}" //call 0x00; push ax
+var translateFunctionCall = "//call\nvar address = (combination.beginAddress - out.address - 4 + 1) & 65535\nout.write(0xE8);\n    out.write(address % 256); out.write((address / 256) % 256);\nout.write(0x50);\n\n//jump\nif(typeof call.branch !== 'undefined'){\n    address = (body[call.branch].beginAddress - out.address - 7) & 65535\n\n    out.write(0x83); out.write(0xF8); //cmp ax, 0\n        out.write(0x00);\n                                \n    out.write(0x0F); out.write(0x84); //je address\n        out.write(address % 256); out.write((address / 256) % 256);\n}" //call 0x00; push ax
 
 
 function functionIndex(f){
@@ -144,6 +144,16 @@ function drawTypeBody(parent, type){
 
                 redraw()
             }
+            else if(type == primitiveTypes[1]) {
+                if(!currentType.type || currentType.type.type != type){
+                    currentType.type = {
+                        type:  primitiveTypes[1],
+                        value: ''
+                    }
+                }
+
+                redraw()
+            }
         })
         .divider()
         .inner(function(parent){
@@ -163,6 +173,18 @@ function drawTypeBody(parent, type){
                     })
 
                 parent.structureParent.children[parent.structureParent.children.length - 1].reference.childNodes[0].value = currentType.type.value
+            }
+            else if(currentType.type.type == primitiveTypes[1]) {
+                parent
+                    .label('описание адреса:')
+                    .input_text('', function(element, event){
+                        var value = parseInt(event.target.value)
+
+                        if(value)
+                            currentType.type.value = value
+                        else
+                            currentType.type.value = 0
+                    })
             }
         })
 }

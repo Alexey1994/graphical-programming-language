@@ -15,4 +15,6 @@ use16
 ;add sp, 2
 ;sub sp, 2
 
-mov word[ebp + 1], 1
+;mov word[ebp + 1], 1
+
+call [bp]

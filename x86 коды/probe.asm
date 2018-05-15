@@ -17,4 +17,10 @@ use16
 
 ;mov word[ebp + 1], 1
 
-call [bp]
+;call [bp]
+
+mov ax, 11
+mov ss, ax
+mov byte[ss:0x8000], 1
+
+;hlt

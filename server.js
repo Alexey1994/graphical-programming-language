@@ -28,7 +28,7 @@ function calculateAddresses(program){
     var constants = program.constants
 
     var output = {
-        address: 0,
+        address: 0x7C00,
 
         write: function(){
             ++this.address
@@ -141,6 +141,7 @@ function calculateAddresses(program){
 
 
 function compile(constants, functions, output){
+    output.address = 0x7C00
 
     for(var i in functions){
         var combinations = functions[i].combinations
@@ -249,6 +250,12 @@ function compile(constants, functions, output){
     }
 
     output.write(0x90); //for help, del
+
+    while(output.address < 0x7C00 + 510)
+        output.write(0x90)
+
+    output.write(0x55)
+    output.write(0xAA)
 }
 
 

@@ -150,8 +150,8 @@ function compile(constants, functions, output){
             var rootCombination = combinations[j]
             var body = rootCombination.body
 
-            output.write(0x55); //push bp
-            output.write(0x89); output.write(0xE5); //mov bp, sp
+            output.write(0x55);                                                                         //push bp
+            output.write(0x89); output.write(0xE5);                                                     //mov bp, sp
             output.write(0x83); output.write(0xEC); output.write(rootCombination.variables.length * 2); //sub sp, rootCombination.variables.length * 2
 
             for(var k in body){
@@ -241,11 +241,11 @@ function compile(constants, functions, output){
                 translateCall(call)
             }
 
-            output.write(0x89); output.write(0xEC); //mov sp, bp
-            output.write(0x5D); //pop bp
+            output.write(0x89); output.write(0xEC);                                                  //mov sp, bp
+            output.write(0x5D);                                                                      //pop bp
             output.write(0x83); output.write(0xC4); output.write(functions[i].arguments.length * 2); //add sp, functions[i].arguments.length * 2
-            output.write(0xA1); output.write(0x00); output.write(0x00); //mov ax, 0
-            output.write(0xC3); //ret
+            output.write(0xA1); output.write(0x00); output.write(0x00);                              //mov ax, 0
+            output.write(0xC3);                                                                      //ret
         }
     }
 

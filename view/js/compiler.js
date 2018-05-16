@@ -226,7 +226,7 @@ function drawConstantBody(parent, constant)
 }
 
 
-function drawVariable(parent, variable){
+function drawVariable(parent, variable, parentList, indexInParentList){
     parent
         .variable(
             variable.name,
@@ -236,13 +236,18 @@ function drawVariable(parent, variable){
             },
 
             function(event){
+                parent
+                    .button('удалить', function() {
+                        parentList.splice(indexInParentList, 1)
 
+                        redraw()
+                    })
             }
         )
 }
 
 
-function drawConstant(parent, constant){
+function drawConstant(parent, constant, parentList, indexInParentList){
     parent
         .constant(
             constant.name,
@@ -252,7 +257,12 @@ function drawConstant(parent, constant){
             },
 
             function(event){
+                parent
+                    .button('удалить', function() {
+                        parentList.splice(indexInParentList, 1)
 
+                        redraw()
+                    })
             }
         )
 }
@@ -303,11 +313,11 @@ function drawArgument(parent, f, argumentDescription, selectedArguments, i){
             .inner(function(argumentBody){
                 if(selectedArguments[i]){
                     if(selectedArguments[i].function)
-                        drawFunction(argumentBody, selectedArguments[i].function, selectedArguments[i].arguments)
+                        drawFunction(argumentBody, selectedArguments[i].function, selectedArguments[i].arguments, selectedArguments, i)
                     else if(selectedArguments[i].variable)
-                        drawVariable(argumentBody, selectedArguments[i].variable)
+                        drawVariable(argumentBody, selectedArguments[i].variable, selectedArguments, i)
                     else if(selectedArguments[i].constant)
-                        drawConstant(argumentBody, selectedArguments[i].constant)
+                        drawConstant(argumentBody, selectedArguments[i].constant, selectedArguments, i)
                 }
                 else
                     drawArgumentSelector(argumentBody.cell(), f, selectedArguments, i)
@@ -315,7 +325,7 @@ function drawArgument(parent, f, argumentDescription, selectedArguments, i){
         .end()
 }
 
-function drawFunction(parent, f, selectedArguments){
+function drawFunction(parent, f, selectedArguments, parentList, indexInParentList){
     parent
         .function(
             f.name,
@@ -325,7 +335,12 @@ function drawFunction(parent, f, selectedArguments){
             },
 
             function(element){
-                console.log(element)
+                parent
+                    .button('удалить', function() {
+                        parentList.splice(indexInParentList, 1)
+
+                        redraw()
+                    })
             }
         )
         .begin()
@@ -444,10 +459,7 @@ function drawProgram(parent, program){
                                         }
                                     })
 
-                                if(f.function)
-                                    drawFunction(functionBody, f.function, f.arguments)
-                                else
-                                    drawFunction(functionBody, f.variable, f.arguments)
+                                drawFunction(functionBody, f.function, f.arguments, get_combination(currentFunction).body, i)
                             })
                         .end()
 
@@ -669,12 +681,25 @@ function redraw(){
                     .inner(function(parent){
                         types.forEach(function(type, i){
                             parent
-                                .type(type.name, function(){
-                                    currentType = type
-                                    currentConstant = null
-                                    currentFunction = null
-                                    redraw()
-                                })
+                                .type(
+                                    type.name,
+
+                                    function(){
+                                        currentType = type
+                                        currentConstant = null
+                                        currentFunction = null
+                                        redraw()
+                                    },
+
+                                    function() {
+                                        parent
+                                            .button('удалить', function(){
+                                                types.splice(i, 1)
+                                                redraw()
+                                            })
+                                    }
+                                )
+
                         })
                     })
                 .end()
@@ -719,7 +744,11 @@ function redraw(){
                                     },
 
                                     function(){
-
+                                        parent
+                                            .button('удалить', function(){
+                                                constants.splice(i, 1)
+                                                redraw()
+                                            })
                                     }
                                 )
                         })

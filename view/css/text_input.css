@@ -5,6 +5,7 @@ text_input
 
 text_input textarea
 {
-    min-width:  100%;
-    min-height: 200px;
+    min-width:   100%;
+    min-height:  200px;
+    font-family: monospace;
 }

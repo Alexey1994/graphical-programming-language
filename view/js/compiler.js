@@ -154,6 +154,16 @@ function drawTypeBody(parent, type){
 
                 redraw()
             }
+            else if(type == primitiveTypes[2]) {
+                if(!currentType.type || currentType.type.type != type){
+                    currentType.type = {
+                        type:  primitiveTypes[2],
+                        value: []
+                    }
+                }
+
+                redraw()
+            }
         })
         .divider()
         .inner(function(parent){
@@ -185,6 +195,41 @@ function drawTypeBody(parent, type){
                         else
                             currentType.type.value = 0
                     })
+            }
+            else if(currentType.type.type == primitiveTypes[2]) {
+                parent
+                    .vertical_space()
+                    .inner(function(parent) {
+                        currentType.type.value.forEach(function(innerType, i) {
+                            parent
+                                .menu(types, function(selectedType) {
+                                    currentType.type.value.splice(i, 0, {
+                                        name: '',
+                                        type: selectedType
+                                    })
+
+                                    redraw()
+                                })
+                                .divider()
+                                .rectangle(20, 20, '#aaa')
+                                .input_text(innerType.name, function(event) {
+                                    innerType.name = event.text
+                                })
+                                .label(innerType.type.name)
+                                .divider()
+                        })
+
+                        parent
+                            .menu(types, function(selectedType) {
+                                currentType.type.value.push({
+                                    name: '',
+                                    type: selectedType
+                                })
+
+                                redraw()
+                            })
+                    })
+                    .divider()
             }
         })
 }
@@ -902,6 +947,28 @@ function deserializeTypes(types){
         })
     }
 
+    function deserializeType2Value(value) {
+        var newValue = []
+
+        for(var i in value) {
+            var currentType = value[i]
+
+            newValue.push({
+                name: currentType.name,
+                type: types[ currentType.typeIndex ]
+            })
+        }
+
+        return newValue
+    }
+
+    for(var i in newTypes){
+        var currentType = newTypes[i]
+
+        if(currentType.type.type == primitiveTypes[2])
+            currentType.type.value = deserializeType2Value(currentType.type.value)
+    }
+
     return newTypes
 }
 
@@ -1029,13 +1096,39 @@ function serialize(types, constants, functions){
         for(var i in types){
             var currentType = types[i]
 
-            newTypes.push({
-                name: currentType.name,
-                type: {
-                    primitiveTypeIndex: primitiveTypeIndex(currentType.type.type),
-                    value:              currentType.type.value
+            function serializeType2Value(value) {
+                var newTypeValue = []
+
+                for(var i in value) {
+                    var currentValue = value[i]
+
+                    newTypeValue.push({
+                        name: currentValue.name,
+                        typeIndex: typeIndex(currentValue.type)
+                    })
                 }
-            })
+
+                return newTypeValue
+            }
+
+            if(currentType.type.type == primitiveTypes[2]) {
+                newTypes.push({
+                    name: currentType.name,
+                    type: {
+                        primitiveTypeIndex: primitiveTypeIndex(currentType.type.type),
+                        value:              serializeType2Value(currentType.type.value)
+                    }
+                })
+            }
+            else {
+                newTypes.push({
+                    name: currentType.name,
+                    type: {
+                        primitiveTypeIndex: primitiveTypeIndex(currentType.type.type),
+                        value:              currentType.type.value
+                    }
+                })
+            }
         }
 
         return newTypes

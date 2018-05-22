@@ -26,6 +26,7 @@ function Output(){
 function calculateAddresses(program){
     var functions = program.functions
     var constants = program.constants
+    var types = program.types
 
     var output = {
         address: 0x7C00,
@@ -112,8 +113,12 @@ function calculateAddresses(program){
                 }
 
                 function translateConstantCall(call){
-                    return null
-                    return call.type
+                    var constant = constants[ call.constantIndex ]
+                    //var type = types[ constant.typeIndex ]
+                    //console.log('constant ' + JSON.stringify(constant))
+                    //console.log('type ' + JSON.stringify(type))
+                    //return null
+                    return constant.typeIndex
                 }
 
                 function translateCall(call){
@@ -220,13 +225,12 @@ function compile(constants, functions, output){
                 }
 
                 function translateConstantCall(call){
-                    //output.write(0xFF) //push [bp + variableIndex]
-                    //output.write(0x76)
-                    //output.write((-call.variableIndex * 2) & 0xff)
-                    //console.log(constants[call.constantIndex])
-
-                    return null
-                    return call.type
+                    var constant = constants[ call.constantIndex ]
+                    //var type = types[ constant.typeIndex ]
+                    //console.log('constant ' + JSON.stringify(constant))
+                    //console.log('type ' + JSON.stringify(type))
+                    //return null
+                    return constant.typeIndex
                 }
 
                 function translateCall(call){

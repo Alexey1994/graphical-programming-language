@@ -36,6 +36,10 @@ function calculateAddresses(program){
         }
     }
 
+    output.write(0x8C); output.write(0xC8); //mov ax,cs
+    output.write(0x8E); output.write(0xD8); //mov ds,ax
+    output.write(0x8E); output.write(0xD0); //mov ss,ax
+
     for(var i in functions){
         var combinations = functions[i].combinations
 
@@ -44,11 +48,11 @@ function calculateAddresses(program){
             var body = rootCombination.body
 
             rootCombination.beginAddress = output.address
-
+/*
             output.write(0x55); //push bp
             output.write(0x89); output.write(0xE5); //mov bp, sp
             output.write(0x83); output.write(0xEC); output.write(rootCombination.variables.length * 2); //sub sp, rootCombination.variables.length * 2
-
+*/
             for(var k in body){
                 var call = body[k]
 
@@ -132,13 +136,13 @@ function calculateAddresses(program){
 
                 translateCall(call)
             }
-
+/*
             output.write(0x89); output.write(0xEC); //mov sp, bp
             output.write(0x5D); //pop bp
             output.write(0x83); output.write(0xC4); output.write(functions[i].arguments.length * 2); //add sp, functions[i].arguments.length * 2
             output.write(0xA1); output.write(0x00); output.write(0x00); //mov ax, 0
             output.write(0xC3); //ret
-
+*/
             rootCombination.endAddress = output.address
         }
     }
@@ -148,17 +152,21 @@ function calculateAddresses(program){
 function compile(constants, functions, output){
     output.address = 0x7C00
 
+    output.write(0x8C); output.write(0xC8); //mov ax,cs
+    output.write(0x8E); output.write(0xD8); //mov ds,ax
+    output.write(0x8E); output.write(0xD0); //mov ss,ax
+
     for(var i in functions){
         var combinations = functions[i].combinations
 
         for(var j in combinations){
             var rootCombination = combinations[j]
             var body = rootCombination.body
-
+/*
             output.write(0x55);                                                                         //push bp
             output.write(0x89); output.write(0xE5);                                                     //mov bp, sp
             output.write(0x83); output.write(0xEC); output.write(rootCombination.variables.length * 2); //sub sp, rootCombination.variables.length * 2
-
+*/
             for(var k in body){
                 var call = body[k]
 
@@ -244,12 +252,12 @@ function compile(constants, functions, output){
 
                 translateCall(call)
             }
-
+/*
             output.write(0x89); output.write(0xEC);                                                  //mov sp, bp
             output.write(0x5D);                                                                      //pop bp
             output.write(0x83); output.write(0xC4); output.write(functions[i].arguments.length * 2); //add sp, functions[i].arguments.length * 2
             output.write(0xA1); output.write(0x00); output.write(0x00);                              //mov ax, 0
-            output.write(0xC3);                                                                      //ret
+            output.write(0xC3);       */                                                               //ret
         }
     }
 

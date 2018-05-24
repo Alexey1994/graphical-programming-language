@@ -19,8 +19,14 @@ use16
 
 ;call [bp]
 
-mov ax, 11
-mov ss, ax
-mov byte[ss:0x8000], 1
+;mov ax, 11
+;mov ss, ax
+;mov byte[ss:0x8000], 1
 
 ;hlt
+
+;mov ax, cs
+;mov ds, ax
+;mov ss, ax
+
+mov sp, 0x8000

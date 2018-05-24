@@ -9,7 +9,7 @@ list function
 {
     display:          block;
     float:            none;
-    margin-bottom:    7px;
+    margin-bottom:    13px;
 }
 
 list function_name
@@ -22,17 +22,19 @@ function_name
     display:          table-cell;
     padding:          10px;
     vertical-align:   middle;
+    margin-right:     15px;
+    border-radius:    4px;
     /*animation:        show 1s linear;*/
-    color:            #000;
-    background-color: #c7763c;
+    color:            #487F7E;
+    background-color: #DDFFFE;
     /* border: 1px solid #000; */
-    box-shadow:       3px 3px 6px 0px #7d7d7d;
+    box-shadow:       1px 1px 2px 0px #7d7d7d;
 }
 
 function_name:hover
 {
     cursor:           pointer;
-    background-color: #eaa;
+    background-color: #dbe8e8;
 }
 
 @keyframes show

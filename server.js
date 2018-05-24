@@ -269,19 +269,19 @@ server.post('/compile', function(request, response){
 
     calculateAddresses(program)
     compile(program.constants, program.functions, output)
-    output.save('code.bin')
+    output.save('view/code.bin')
 
     response.send()
 })
 
 server.post('/save', function(request, response){
-    fs.writeFile('code.json', JSON.stringify(request.body), function(){})
+    fs.writeFile('view/code.json', JSON.stringify(request.body), function(){})
 })
 
 server.get('/load', function(request, response){
-    fs.readFile('code.json', function(errorCode, data){
+    fs.readFile('view/code.json', function(errorCode, data){
         response.send(data)
     })
 })
 
-server.listen(8000)
+server.listen(process.env.PORT || 8000)

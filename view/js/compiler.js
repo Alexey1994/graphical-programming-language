@@ -596,11 +596,13 @@ function drawFunctionBody(programBody, currentFunction){
 
         .label('комбинации типов аргументов')
         .divider()
+        .inline_block()
+        .begin()
         .inner(function(parent){
             currentFunction.combinations.forEach(function(currentCombination, i){
                 if(currentFunction.currentCombination == i)
                     parent
-                        .label('->')
+                        .label('&#8594;')
 
                 parent
                     .button('выбрать комбинацию', function(){
@@ -634,6 +636,7 @@ function drawFunctionBody(programBody, currentFunction){
             })
 
             parent
+                .divider()
                 .button('новая комбинация', function(){
                     var newCombination = {
                         combination: [],
@@ -650,6 +653,7 @@ function drawFunctionBody(programBody, currentFunction){
                     redraw()
                 })
         })
+        .end()
 
         .window_divider()
         .inner_block()

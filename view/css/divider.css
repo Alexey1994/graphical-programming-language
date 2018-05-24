@@ -1,4 +1,5 @@
 divider
 {
-    display: block;
+    display:          block;
+    background-color: #eaeaea;
 }

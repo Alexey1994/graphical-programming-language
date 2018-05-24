@@ -1,0 +1,2 @@
+web: npm i
+web: node server.js

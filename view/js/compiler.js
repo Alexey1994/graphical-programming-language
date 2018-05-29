@@ -300,8 +300,38 @@ function drawBitsArrayConstant(parent, constant) {
     }
 }
 
-function drawConstantBody(parent, constant)
-{
+function drawCompositeConstant(parent, constant){
+    parent
+        .label('тип константы: ')
+        .label(constant.type.name)
+        .divider()
+        .inner(function(parent){
+            /*for(var i in constant.type.type.value){
+                var currentField = constant.type.type.value[i]
+
+                console.log(currentField)
+            }*/
+
+            constant.type.type.value.forEach(function(currentField, index){
+                parent
+                    .label(currentField.name)
+                    .inner(function(parent){
+                        if(typeIndex(currentField.type.type.type) == 0){
+                            parent
+                                .input_text('', 0, function(element, event){
+
+                                })
+                        }
+                    })
+                    .divider()
+
+                console.log(currentField)
+            })
+        })
+    console.log(constant)
+}
+
+function drawConstantBody(parent, constant){
     parent
         .label('выбранная константа:')
         .label(currentConstant.name)
@@ -320,6 +350,8 @@ function drawConstantBody(parent, constant)
 
         if(type == primitiveTypes[0])
             drawBitsArrayConstant(parent, constant)
+        else if(type == primitiveTypes[2])
+            drawCompositeConstant(parent, constant)
     }
 }
 

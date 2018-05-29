@@ -173,7 +173,7 @@ function drawTypeBody(parent, type){
             if(currentType.type.type == primitiveTypes[0]){
                 parent
                     .label('количество бит')
-                    .input_text('0', function(element, event){
+                    .input_text('', currentType.type.value, function(element, event){
                         var value = parseInt(event.target.value)
 
                         if(value)
@@ -182,12 +182,12 @@ function drawTypeBody(parent, type){
                             currentType.type.value = 0
                     })
 
-                parent.structureParent.children[parent.structureParent.children.length - 1].reference.childNodes[0].value = currentType.type.value
+                //parent.structureParent.children[parent.structureParent.children.length - 1].reference.childNodes[0].value = currentType.type.value
             }
             else if(currentType.type.type == primitiveTypes[1]) {
                 parent
                     .label('описание адреса:')
-                    .input_text('', function(element, event){
+                    .input_text('', currentType.type.value, function(element, event){
                         var value = parseInt(event.target.value)
 
                         if(value)
@@ -212,7 +212,7 @@ function drawTypeBody(parent, type){
                                 })
                                 .divider()
                                 .rectangle(20, 20, '#aaa')
-                                .input_text(innerType.name, function(event) {
+                                .input_text('имя', innerType.name, function(event) {
                                     innerType.name = event.text
                                 })
                                 .label(innerType.type.name)
@@ -234,6 +234,72 @@ function drawTypeBody(parent, type){
         })
 }
 
+var is10ConstantValueRepresentation = true
+var isBitConstantValueRepresentation = false
+
+function drawBitsArrayConstant(parent, constant) {
+    parent
+        .label('представление:')
+        .divider()
+            .label('десятичное')
+            .checkbox(is10ConstantValueRepresentation, function(state){
+                is10ConstantValueRepresentation = state
+                redraw()
+            })
+        .divider()
+            .label('битовое')
+            .checkbox(isBitConstantValueRepresentation, function(state){
+                isBitConstantValueRepresentation = state
+                redraw()
+            })
+        .divider()
+
+    if(is10ConstantValueRepresentation){
+        parent
+            .label('десятичное значение')
+            .input_text('', constant.value, function(element, event){
+                var value = parseInt(event.target.value)
+
+                if(value)
+                    constant.value = value
+                else
+                    constant.value = 0
+            })
+            .divider()
+    }
+
+    if(isBitConstantValueRepresentation){
+        var bitValue = ''
+        var t = constant.value
+
+        while(t) {
+            if(t % 2)
+                bitValue = '1' + bitValue
+            else
+                bitValue = '0' + bitValue
+
+            t >>= 1//t /= 2
+        }
+
+        parent
+            .label('битовое значение')
+            .input_text('', bitValue, function(element, event){
+                var value = 0//parseInt(event.target.value)
+                var selector = 1
+
+                for(var i = event.target.value.length; i; --i) {
+                    if(event.target.value[i - 1] == '1')
+                        value += selector
+
+                    selector *= 2
+                }
+
+                constant.value = value
+            })
+            .divider()
+    }
+}
+
 function drawConstantBody(parent, constant)
 {
     parent
@@ -247,26 +313,13 @@ function drawConstantBody(parent, constant)
 
             redraw()
         })
+        .divider()
 
     if(constant.type && constant.type.type){
         var type = constant.type.type.type
 
-        if(type == primitiveTypes[0]){
-            parent
-                .divider()
-                .label('значение')
-                .input_text('0', function(element, event){
-                    var value = parseInt(event.target.value)
-
-                    if(value)
-                        constant.value = value
-                    else
-                        constant.value = 0
-                })
-
-            if(constant.value)
-                parent.structureParent.children[parent.structureParent.children.length - 1].reference.childNodes[0].value = constant.value
-        }
+        if(type == primitiveTypes[0])
+            drawBitsArrayConstant(parent, constant)
     }
 }
 
@@ -568,10 +621,10 @@ function drawFunctionBody(programBody, currentFunction){
                             var newArgumentName = 'без имени'
 
                             parent
-                                .input_text('описание аргумента', function(element, event){
+                                .input_text('описание аргумента', '', function(element, event){
                                     newArgumentDescription = element.text
                                 })
-                                .input_text('имя аргумента', function(element, event){
+                                .input_text('имя аргумента', '', function(element, event){
                                     newArgumentName = element.text
                                 })
                                 .button('добавить аргумент', function(element, event){
@@ -685,7 +738,7 @@ function drawFunctionBody(programBody, currentFunction){
                     var newVariableName = 'без имени'
 
                     parent
-                        .input_text('имя переменной', function(element, event){
+                        .input_text('имя переменной', '', function(element, event){
                             newVariableName = element.text
                         })
                         .button('добавить переменную', function(element, event){
@@ -759,7 +812,7 @@ function redraw(){
                         var newTypeName = 'без имени'
 
                         parent
-                            .input_text('имя типа', function(element, event){
+                            .input_text('имя типа', '', function(element, event){
                                 newTypeName = element.text
                             })
                             .button('добавить тип', function(element, event){
@@ -810,7 +863,7 @@ function redraw(){
                         var newConstantName = 'без имени'
 
                         parent
-                            .input_text('имя константы', function(element, event){
+                            .input_text('имя константы', '', function(element, event){
                                 newConstantName = element.text
                             })
                             .button('добавить константу', function(element, event){
@@ -864,7 +917,7 @@ function redraw(){
                         var newFunctionName = 'без имени'
 
                         parent
-                            .input_text('имя функции', function(element, event){
+                            .input_text('имя функции', '', function(element, event){
                                 newFunctionName = element.text
                             })
                             .button('добавить функцию', function(element, event){

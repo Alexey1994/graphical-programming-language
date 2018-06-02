@@ -52,7 +52,7 @@ addElement('argument_menu', function(constants, onSelectConstant, variables, onS
                 menuBody = parent.structureParent
             })
 
-            .input_text('поиск', function(element){
+            .input_text('поиск', '', function(element){
                 searchText = element.text
                 updateFields(constantsBodyParent, constantsBody, constants, onSelectConstant, searchText)
                 updateFields(variablesBodyParent, variablesBody, variables, onSelectVariable, searchText)

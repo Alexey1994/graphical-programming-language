@@ -24,40 +24,7 @@ var functions = [
             }
         ],
         currentCombination: 0
-    }/*,
-
-    {
-        name: 'сумма',
-        arguments: [
-            { name: 'a', label: '' },
-            { name: 'b', label: 'и' }
-        ],
-        variables: [],
-        body: [],
-        translate: 'out.write(0x5B); out.write(0x58); out.write(0x01); out.write(0xD8); out.write(0x50);'//pop bx; pop ax; add ax, bx; push ax
-    },
-
-    {
-        name: 'разность',
-        arguments: [
-            { name: 'a', label: '' },
-            { name: 'b', label: 'и' }
-        ],
-        variables: [],
-        body: [],
-        translate: 'out.write(0x5B); out.write(0x58); out.write(0x29); out.write(0xD8); out.write(0x50);'//pop bx; pop ax; sub ax, bx; push ax
-    },
-
-    {
-        name: 'копировать',
-        arguments: [
-            { name: 'a', label: '' },
-            { name: 'b', label: 'в' }
-        ],
-        variables: [],
-        body: [],
-        translate: 'out.write(0x58); out.write(0xA3); out.write(0x00); out.write(0x00);'//pop ax; mov [], ax
-    }*/
+    }
 ]
 
 var currentConstant
@@ -316,19 +283,23 @@ function drawCompositeConstant(parent, constant){
                 parent
                     .label(currentField.name)
                     .inner(function(parent){
-                        if(typeIndex(currentField.type.type.type) == 0){
-                            parent
-                                .input_text('', 0, function(element, event){
-
-                                })
+                        function drawConstantField(field){
+                            if(field.type.type.type == primitiveTypes[0]){
+                                parent
+                                    .input_text('', constant.value[index], function(element, event){
+                                        constant.value[index] = parseInt(element.text)
+                                    })
+                            }
+                            else if(field.type.type.type == primitiveTypes[2]){
+                                alert('recursive type not support')
+                            }
                         }
+
+                        drawConstantField(currentField)
                     })
                     .divider()
-
-                console.log(currentField)
             })
         })
-    console.log(constant)
 }
 
 function drawConstantBody(parent, constant){
@@ -338,8 +309,27 @@ function drawConstantBody(parent, constant){
         .divider()
 
         .menu(types, function(type){
+            console.log(type)
+
             constant.type = type
-            constant.value = null
+
+            if(type.type.type == primitiveTypes[0]){
+                constant.value = 0
+            }
+            else if(type.type.type == primitiveTypes[2]){
+                constant.value = []
+
+                for(var i in type.type.value){
+                    var currentType = type.type.value[i]
+
+                    if(currentType.type.type.type == primitiveTypes[0]){
+                        constant.value.push(0)
+                    }
+                    else{
+                        console.log('error: recursive structures not implemented')
+                    }
+                }
+            }
 
             redraw()
         })
@@ -400,11 +390,11 @@ function drawConstant(parent, constant, parentList, indexInParentList){
 
 function drawArgumentSelector(parent, f, selectedArguments, i){
     parent
+        .cell()
         .begin()
             .argument_menu(
                 constants,
                 function(constant){
-
                     selectedArguments[i] = {
                         constant: constant
                     }
@@ -450,7 +440,7 @@ function drawArgument(parent, f, argumentDescription, selectedArguments, i){
                         drawConstant(argumentBody, selectedArguments[i].constant, selectedArguments, i)
                 }
                 else
-                    drawArgumentSelector(argumentBody.cell(), f, selectedArguments, i)
+                    drawArgumentSelector(argumentBody, f, selectedArguments, i)
             })     
         .end()
 }
@@ -1044,7 +1034,7 @@ function deserializeTypes(types){
 
             newValue.push({
                 name: currentType.name,
-                type: types[ currentType.typeIndex ]
+                type: newTypes[ currentType.typeIndex ]
             })
         }
 
@@ -1080,8 +1070,6 @@ function deserializeConstants(constants){
 
 
 function deserialize(functions){
-    //var currentCombination
-
     function deserializeCombination(combination){
         var newCombination = []
 

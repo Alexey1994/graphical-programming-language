@@ -85,6 +85,8 @@ function calculateAddresses(program){
                             if(foundedCombination !== undefined)
                                 return combinations[i]
                         }
+
+                        return combinations[0]
                     }
 
                     var combination = getCombination(functions[call.functionIndex], type)
@@ -146,10 +148,59 @@ function calculateAddresses(program){
             rootCombination.endAddress = output.address
         }
     }
+
+    var bitStream = {
+        position: 0,
+        data: 0,
+
+        write: function(bit){
+            if(bit)
+                this.data |= 1
+
+            ++this.position
+
+            if(this.position == 8){
+                output.write(this.data)
+                this.position = 0
+                this.data = 0
+            }
+            else
+                this.data <<= 1
+        }
+    }
+
+    for(var i in constants){
+        var currentConstant = constants[i]
+        var constantType = types[currentConstant.typeIndex]
+
+        currentConstant.beginAddress = output.address
+
+        if(constantType.type.primitiveTypeIndex == 0){
+            var position = 0
+            var value = currentConstant.value
+
+            for(var j = 0; j < constantType.type.value; ++j){
+                bitStream.write((value & (0b10000000 >> position)))
+
+                ++position
+
+                if(position == 8){
+                    position = 0
+                    value /= 256
+                }
+            }
+        }
+
+        if(bitStream.position){
+            output.write(bitStream.data)
+        }
+
+        currentConstant.endAddress = output.address
+    }
 }
 
 
-function compile(constants, functions, output){
+function compile(types, constants, functions, output){
     output.address = 0x7C00
 
     output.write(0x8C); output.write(0xC8); //mov ax,cs
@@ -197,6 +248,8 @@ function compile(constants, functions, output){
                             if(foundedCombination !== undefined)
                                 return combinations[i]
                         }
+
+                        return combinations[0]
                     }
 
                     var combination = getCombination(functions[call.functionIndex], type)
@@ -261,7 +314,77 @@ function compile(constants, functions, output){
         }
     }
 
-    output.write(0x90); //for help, del
+    var bitStream = {
+        position: 0,
+        data: 0,
+
+        write: function(bit){
+            if(bit)
+                this.data |= 1
+
+            ++this.position
+
+            if(this.position == 8){
+                output.write(this.data)
+                this.position = 0
+                this.data = 0
+            }
+            else
+                this.data <<= 1
+        }
+    }
+
+    for(var i in constants){
+        var currentConstant = constants[i]
+        var constantType = types[currentConstant.typeIndex]
+
+        if(constantType.type.primitiveTypeIndex == 0){
+            var position = 0
+            var value = currentConstant.value
+
+            for(var j = 0; j < constantType.type.value; ++j){
+                bitStream.write((value & (0b10000000 >> position)))
+
+                ++position
+
+                if(position == 8){
+                    position = 0
+                    value /= 256
+                }
+            }
+        }
+        else if(constantType.type.primitiveTypeIndex == 2){
+            var type = types[currentConstant.typeIndex]
+
+            for(var j in currentConstant.value){
+                var currentValue = currentConstant.value[j]
+                var currentFieldPrimitiveTypeIndex = types[type.type.value[j].typeIndex].type.primitiveTypeIndex
+                var currentFieldTypeValue = types[type.type.value[j].typeIndex].type.value
+
+                if(currentFieldPrimitiveTypeIndex == 0){
+                    var position = 0
+
+                    for(var k = 0; k < currentFieldTypeValue; ++k){
+                        bitStream.write((currentValue & (0b10000000 >> position)))
+
+                        ++position
+
+                        if(position == 8){
+                            position = 0
+                            currentValue /= 256
+                        }
+                    }
+                }
+                else if(currentFieldPrimitiveTypeIndex == 2){
+                    throw 'recursive type not defined'
+                }
+            }
+        }
+
+        if(bitStream.position){
+            output.write(bitStream.data)
+        }
+    }
 
     while(output.address < 0x7C00 + 510)
         output.write(0x90)
@@ -276,7 +399,7 @@ server.post('/compile', function(request, response){
     var output = new Output()
 
     calculateAddresses(program)
-    compile(program.constants, program.functions, output)
+    compile(program.types, program.constants, program.functions, output)
     output.save('view/code.bin')
 
     response.send()

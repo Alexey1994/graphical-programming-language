@@ -32,13 +32,11 @@ var currentFunction = functions[0]
 var currentFunctionInCustomTranslateMode = false
 var translateFunctionCall = "//call\nvar address = (combination.beginAddress - out.address - 4 + 1) & 65535\nout.write(0xE8);\n    out.write(address % 256); out.write((address / 256) % 256);\nout.write(0x50);\n\n//jump\nif(typeof call.branch !== 'undefined'){\n    address = (body[call.branch].beginAddress - out.address - 7) & 65535\n\n    out.write(0x83); out.write(0xF8); //cmp ax, 0\n        out.write(0x00);\n                                \n    out.write(0x0F); out.write(0x84); //je address\n        out.write(address % 256); out.write((address / 256) % 256);\n}" //call 0x00; push ax
 
-
 function functionIndex(f){
     for(var i=0; i<functions.length; ++i)
         if(functions[i] == f)
             return i
 }
-
 
 function variableIndex(combination, variable){
     for(var i=0; i<combination.variables.length; ++i)
@@ -46,13 +44,11 @@ function variableIndex(combination, variable){
             return i
 }
 
-
 function constantIndex(constant){
     for(var i=0; i<constants.length; ++i)
         if(constants[i] == constant)
             return i
 }
-
 
 function typeIndex(type){
     for(var i=0; i<types.length; ++i)
@@ -60,18 +56,15 @@ function typeIndex(type){
             return i
 }
 
-
 function primitiveTypeIndex(primitiveType){
     for(var i = 0; i < primitiveTypes.length; ++i)
         if(primitiveType == primitiveTypes[i])
             return i
 }
 
-
 function get_combination(f){
     return f.combinations[f.currentCombination]
 }
-
 
 function allAllowedFunctions(f, argumentNumber){
     var allowedFunctions = []
@@ -92,7 +85,6 @@ function allAllowedFunctions(f, argumentNumber){
 
     return allowedFunctions
 }
-
 
 function drawTypeBody(parent, type){
     parent
@@ -281,7 +273,6 @@ function drawCompositeConstant(parent, constant){
 
             constant.type.type.value.forEach(function(currentField, index){
                 parent
-                    .label(currentField.name)
                     .inner(function(parent){
                         function drawConstantField(field){
                             if(field.type.type.type == primitiveTypes[0]){
@@ -297,6 +288,7 @@ function drawCompositeConstant(parent, constant){
 
                         drawConstantField(currentField)
                     })
+                    .label(currentField.name)
                     .divider()
             })
         })
@@ -309,8 +301,6 @@ function drawConstantBody(parent, constant){
         .divider()
 
         .menu(types, function(type){
-            console.log(type)
-
             constant.type = type
 
             if(type.type.type == primitiveTypes[0]){
@@ -345,7 +335,6 @@ function drawConstantBody(parent, constant){
     }
 }
 
-
 function drawVariable(parent, variable, parentList, indexInParentList){
     parent
         .variable(
@@ -366,11 +355,67 @@ function drawVariable(parent, variable, parentList, indexInParentList){
         )
 }
 
-
 function drawConstant(parent, constant, parentList, indexInParentList){
+    function t(constant){
+        if(constant.type.type.type == primitiveTypes[0]){
+            //console.log(constant.name + ': ' + constant.value)
+        }
+        else if(constant.type.type.type == primitiveTypes[2]){
+            for(var i in constant.type.type.value){
+                var currentInnerConstant = constant.type.type.value[i]
+                t(currentInnerConstant)
+            }
+        }
+    }
+
+    //t(constant)
+
     parent
         .constant(
             constant.name,
+                    
+            function(event){
+
+            },
+
+            function(event){
+                parent
+                    .button('удалить', function() {
+                        parentList.splice(indexInParentList, 1)
+
+                        redraw()
+                    })
+            }
+        )
+
+    if(constant.type.type.type == primitiveTypes[2]){
+        parent
+        .cell()
+        .begin()
+            .menu(constant.type.type.value, function(selectedField){
+                parentList[indexInParentList].selectedField = selectedField
+                redraw()
+            })
+        .end()
+    }
+
+    if(parentList[indexInParentList].selectedField){
+        parent
+            .cell()
+            .begin()
+                .inner(function(parent){
+                    drawConstant(parent, parentList[indexInParentList].selectedField, parentList[indexInParentList], 'selectedField')
+                })
+            .end()
+    }
+}
+
+function drawArgument(parent, argument, parentList, indexInParentList){
+    console.log(argument)
+
+    parent
+        .variable(
+            argument.name,
             
             function(event){
 
@@ -386,7 +431,6 @@ function drawConstant(parent, constant, parentList, indexInParentList){
             }
         )
 }
-
 
 function drawArgumentSelector(parent, f, selectedArguments, i){
     parent
@@ -419,6 +463,15 @@ function drawArgumentSelector(parent, f, selectedArguments, i){
                     }
 
                     redraw()
+                },
+
+                f.arguments,
+                function(argument){
+                    selectedArguments[i] = {
+                        argument: argument
+                    }
+
+                    redraw()
                 }
             )
         .end()
@@ -430,17 +483,19 @@ function drawArgument(parent, f, argumentDescription, selectedArguments, i){
             console.log(argumentElement)
         })
         .begin()
-            .inner(function(argumentBody){
+            .inner(function(parent){
                 if(selectedArguments[i]){
                     if(selectedArguments[i].function)
-                        drawFunction(argumentBody, selectedArguments[i].function, selectedArguments[i].arguments, selectedArguments, i)
+                        drawFunction(parent, selectedArguments[i].function, selectedArguments[i].arguments, selectedArguments, i)
                     else if(selectedArguments[i].variable)
-                        drawVariable(argumentBody, selectedArguments[i].variable, selectedArguments, i)
+                        drawVariable(parent, selectedArguments[i].variable, selectedArguments, i)
                     else if(selectedArguments[i].constant)
-                        drawConstant(argumentBody, selectedArguments[i].constant, selectedArguments, i)
+                        drawConstant(parent, selectedArguments[i].constant, selectedArguments, i)
+                    else if(selectedArguments[i].argument)
+                        drawArgument(parent, selectedArguments[i].argument, selectedArguments, i)
                 }
                 else
-                    drawArgumentSelector(argumentBody, f, selectedArguments, i)
+                    drawArgumentSelector(parent, f, selectedArguments, i)
             })     
         .end()
 }
@@ -473,8 +528,6 @@ function drawFunction(parent, f, selectedArguments, parentList, indexInParentLis
             .end()
         .end()
 }
-
-
 
 function drawArrows(){
     var arrows = []
@@ -514,7 +567,6 @@ function drawArrows(){
         drawLine(canvasContext, canvasContext.canvas.width, arrow.to.y, canvasContext.canvas.width - 10, arrow.to.y - 5)
     }
 }
-
 
 function drawProgram(parent, program){
     parent
@@ -604,7 +656,6 @@ function drawProgram(parent, program){
 
     drawArrows()
 }
-
 
 function drawFunctionBody(programBody, currentFunction){
     programBody
@@ -791,7 +842,6 @@ function drawFunctionBody(programBody, currentFunction){
         else
             drawProgram(programBody, get_combination(currentFunction).body)
 }
-
 
 function redraw(){
     draw()
@@ -1000,7 +1050,6 @@ function redraw(){
         })
 }
 
-
 document.addEventListener('contextmenu', function(event){
     var element = event.target.element
 
@@ -1009,7 +1058,6 @@ document.addEventListener('contextmenu', function(event){
         event.preventDefault()
     }
 })
-
 
 function deserializeTypes(types){
     var newTypes = []
@@ -1051,7 +1099,6 @@ function deserializeTypes(types){
     return newTypes
 }
 
-
 function deserializeConstants(constants){
     var newConstants = []
 
@@ -1067,7 +1114,6 @@ function deserializeConstants(constants){
 
     return newConstants
 }
-
 
 function deserialize(functions){
     function deserializeCombination(combination){
@@ -1164,7 +1210,6 @@ function deserialize(functions){
 
     return newFunctions
 }
-
 
 function serialize(types, constants, functions){
     function serializeTypes(types){
@@ -1350,7 +1395,6 @@ function serialize(types, constants, functions){
         functions: newFunctions
     }
 }
-
 
 window.onload = function(){
     get('/load', function(data){

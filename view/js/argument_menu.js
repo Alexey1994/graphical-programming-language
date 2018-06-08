@@ -1,4 +1,4 @@
-addElement('argument_menu', function(constants, onSelectConstant, variables, onSelectVariable, functions, onSelectFunction, element)
+addElement('argument_menu', function(constants, onSelectConstant, variables, onSelectVariable, functions, onSelectFunction, functionArguments, onSelectArgument, element)
 {
     var reference = element.reference
     var searchText = ''
@@ -12,6 +12,9 @@ addElement('argument_menu', function(constants, onSelectConstant, variables, onS
 
     var functionsBodyParent
     var functionsBody
+
+    var argumentsBodyParent
+    var argumentsBody
 
     reference.onclick = function(event){
         menuBody.reference.style.display = 'inline-block'
@@ -57,6 +60,7 @@ addElement('argument_menu', function(constants, onSelectConstant, variables, onS
                 updateFields(constantsBodyParent, constantsBody, constants, onSelectConstant, searchText)
                 updateFields(variablesBodyParent, variablesBody, variables, onSelectVariable, searchText)
                 updateFields(functionsBodyParent, functionsBody, functions, onSelectFunction, searchText)
+                updateFields(argumentsBodyParent, argumentsBody, functionArguments, onSelectArgument, searchText)
             })
             .divider()
 
@@ -98,6 +102,20 @@ addElement('argument_menu', function(constants, onSelectConstant, variables, onS
                         functionsBody = parent.structureParent
 
                         updateFields(functionsBodyParent, functionsBody, functions, onSelectFunction, searchText)
+                    })
+                .end()
+            .end()
+
+            .inner_block()
+            .begin()
+                .label('аргументы')
+                .block()
+                .begin()
+                    .inner(function(parent){
+                        argumentsBodyParent = parent
+                        argumentsBody = parent.structureParent
+
+                        updateFields(argumentsBodyParent, argumentsBody, functionArguments, onSelectArgument, searchText)
                     })
                 .end()
             .end()

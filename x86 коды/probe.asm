@@ -31,39 +31,23 @@ use16
 
 ;mov sp, 0x8000
 
-GDT:
-    dq 0                  ; dummy
+;mov ax, 2
+;mov gs, ax
+;mov ax, [gs: 0]
 
-                          ; CODE (CS register = 8)
-    dw 0xffff             ; Segment Limit
-    dw 0                  ; Base address
-    db 0                  ; Base address
-    db 0b10011010         ; segment present   = 1 (segment is valid)
-                          ; ring              = 00 (maximum)
-                          ; descriptor type   = 1 (code and data)
-                          ; type              = 1010 (read/execute)
-    db 0b11001111         ; Granularity       = 1 (max memory size = 4096 * Segment Limit)
-                          ; 32 bit addressing = 1 (enabled)
-                          ; L                 = 0
-                          ; AVL               = 0
-                          ; Segment Limit     = 1111
-    db 0                  ; Base address
+;mov [gs: 0], ax
 
-                          ; DATA (DS register = 16)
-    dw 0xffff             ; Segment Limit
-    dw 0                  ; Base address
-    db 0                  ; Base address
-    db 0b10010010         ; segment present   = 1 (segment is valid)
-                          ; ring              = 00 (maximum)
-                          ; descriptor type   = 1 (code and data)
-                          ; type              = 0010 (read/write)
-    db 0b11001111         ; Granularity       = 1 (max memory size = 4096 * Segment Limit)
-                          ; 32 bit addressing = 1 (enabled)
-                          ; L                 = 0
-                          ; AVL               = 0
-                          ; Segment Limit     = 1111
-    db 0                  ; Base address
+;mov ah, 0x42
+;mov dl, 0x80
+;mov si, 0x01
+;int 0x13
 
-GDT_pointer:
-    dw $ - GDT - 1
-    dd GDT
+;jmp 0x0102:0x0304
+
+;int ah
+
+;mov al, ah
+
+;push word[CS:0x0001]
+
+mov ax,[bp-3]

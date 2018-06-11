@@ -30,11 +30,17 @@ var functions = [
 var currentConstant
 var currentFunction = functions[0]
 var currentFunctionInCustomTranslateMode = false
-var translateFunctionCall = "//call\nvar address = (combination.beginAddress - out.address - 4 + 1) & 65535\nout.write(0xE8);\n    out.write(address % 256); out.write((address / 256) % 256);\nout.write(0x50);\n\n//jump\nif(typeof call.branch !== 'undefined'){\n    address = (body[call.branch].beginAddress - out.address - 7) & 65535\n\n    out.write(0x83); out.write(0xF8); //cmp ax, 0\n        out.write(0x00);\n                                \n    out.write(0x0F); out.write(0x84); //je address\n        out.write(address % 256); out.write((address / 256) % 256);\n}" //call 0x00; push ax
+var translateFunctionCall = ''//"//call\nvar address = (combination.beginAddress - out.address - 4 + 1) & 65535\nout.write(0xE8);\n    out.write(address % 256); out.write((address / 256) % 256);\nout.write(0x50);\n\n//jump\nif(typeof call.branch !== 'undefined'){\n    address = (body[call.branch].beginAddress - out.address - 7) & 65535\n\n    out.write(0x83); out.write(0xF8); //cmp ax, 0\n        out.write(0x00);\n                                \n    out.write(0x0F); out.write(0x84); //je address\n        out.write(address % 256); out.write((address / 256) % 256);\n}" //call 0x00; push ax
 
 function functionIndex(f){
     for(var i=0; i<functions.length; ++i)
         if(functions[i] == f)
+            return i
+}
+
+function argumentIndex(argument, f){
+    for(var i = 0; i < f.arguments.length; ++i)
+        if(f.arguments[i] == argument)
             return i
 }
 
@@ -89,7 +95,9 @@ function allAllowedFunctions(f, argumentNumber){
 function drawTypeBody(parent, type){
     parent
         .label('выбранный тип:')
-        .label(currentType.name)
+        .input_text('', currentType.name, function(element, event){
+            currentType.name = event.target.value
+        })
         .divider()
 
         .menu(primitiveTypes, function(type){
@@ -297,7 +305,9 @@ function drawCompositeConstant(parent, constant){
 function drawConstantBody(parent, constant){
     parent
         .label('выбранная константа:')
-        .label(currentConstant.name)
+        .input_text('', currentConstant.name, function(element, event){
+            currentConstant.name = event.target.value
+        })
         .divider()
 
         .menu(types, function(type){
@@ -410,9 +420,7 @@ function drawConstant(parent, constant, parentList, indexInParentList){
     }
 }
 
-function drawArgument(parent, argument, parentList, indexInParentList){
-    console.log(argument)
-
+function drawFunctionArgument(parent, argument, parentList, indexInParentList){
     parent
         .variable(
             argument.name,
@@ -465,7 +473,7 @@ function drawArgumentSelector(parent, f, selectedArguments, i){
                     redraw()
                 },
 
-                f.arguments,
+                currentFunction.arguments,
                 function(argument){
                     selectedArguments[i] = {
                         argument: argument
@@ -492,7 +500,7 @@ function drawArgument(parent, f, argumentDescription, selectedArguments, i){
                     else if(selectedArguments[i].constant)
                         drawConstant(parent, selectedArguments[i].constant, selectedArguments, i)
                     else if(selectedArguments[i].argument)
-                        drawArgument(parent, selectedArguments[i].argument, selectedArguments, i)
+                        drawFunctionArgument(parent, selectedArguments[i].argument, selectedArguments, i)
                 }
                 else
                     drawArgumentSelector(parent, f, selectedArguments, i)
@@ -622,11 +630,14 @@ function drawProgram(parent, program){
                                         if(currentBranchSelector){
                                             currentBranchSelector.branch = f.index
                                             drawArrows()
-                                            currentBranchSelector = null
+                                            currentBranchSelector = undefined
                                         }
                                         else{
-                                            currentBranchSelector = f
-                                            currentBranchSelector.branch = null
+                                            if(typeof f.branch !== 'undefined')
+                                                f.branch = undefined
+                                            else
+                                                currentBranchSelector = f
+
                                             drawArrows()
                                         }
                                     })
@@ -659,72 +670,73 @@ function drawProgram(parent, program){
 
 function drawFunctionBody(programBody, currentFunction){
     programBody
-        .inner(function(parent){
-            parent
-                .label('выбранная функция:')
-                .label(currentFunction.name)
-
-                .inner_block()
-                .begin()
-                    .label('аргументы:')
-                    .list()
-                    .begin()
-                        .inner(function(parent){
-                            currentFunction.arguments.forEach(function(argument, i){
-                                parent
-                                    .function(
-                                        argument.label + ' ' + argument.name,
-
-                                        function(){
-                                            console.log(argument)
-                                        },
-
-                                        function(){
-
-                                        }
-                                    )
-                            })
-                        })
-                    .end()
-
-                    .block()
-                    .begin()
-                        .inner(function(parent){
-                            var newArgumentDescription = ''
-                            var newArgumentName = 'без имени'
-
-                            parent
-                                .input_text('описание аргумента', '', function(element, event){
-                                    newArgumentDescription = element.text
-                                })
-                                .input_text('имя аргумента', '', function(element, event){
-                                    newArgumentName = element.text
-                                })
-                                .button('добавить аргумент', function(element, event){
-                                    currentFunction.arguments.push({
-                                        label: newArgumentDescription,
-                                        name:  newArgumentName
-                                    })
-
-                                    for(var i in currentFunction.combinations){
-                                        var currentCombination = currentFunction.combinations[i]
-
-                                        currentCombination.combination.push(undefined)
-                                    }
-
-                                    redraw()
-                                })
-                        })
-                    .end()
-                .end()
+        .label('выбранная функция:')
+        .input_text('', currentFunction.name, function(element, event){
+            currentFunction.name = event.target.value
         })
-        .window_divider()
-
-        .label('комбинации типов аргументов')
         .divider()
+
+        .inner_block()
+        .begin()
+            .label('аргументы:')
+            .list()
+            .begin()
+                .inner(function(parent){
+                    currentFunction.arguments.forEach(function(argument, i){
+                        parent
+                            .function(
+                                argument.label + ' ' + argument.name,
+
+                                function(){
+                                    console.log(argument)
+                                },
+
+                                function(){
+
+                                }
+                            )
+                    })
+                })
+            .end()
+
+            .block()
+            .begin()
+                .inner(function(parent){
+                    var newArgumentDescription = ''
+                    var newArgumentName = 'без имени'
+
+                    parent
+                        .input_text('описание аргумента', '', function(element, event){
+                            newArgumentDescription = element.text
+                        })
+                        .input_text('имя аргумента', '', function(element, event){
+                            newArgumentName = element.text
+                        })
+                        .button('добавить аргумент', function(element, event){
+                            currentFunction.arguments.push({
+                                label: newArgumentDescription,
+                                name:  newArgumentName
+                            })
+
+                            for(var i in currentFunction.combinations){
+                                var currentCombination = currentFunction.combinations[i]
+
+                                currentCombination.combination.push(undefined)
+                            }
+
+                            redraw()
+                        })
+                })
+            .end()
+        .end()
+
         .inline_block()
         .begin()
         .inner(function(parent){
+            parent
+                .label('комбинации типов аргументов')
+                .divider()
+
             currentFunction.combinations.forEach(function(currentCombination, i){
                 if(currentFunction.currentCombination == i)
                     parent
@@ -781,7 +793,7 @@ function drawFunctionBody(programBody, currentFunction){
         })
         .end()
 
-        .window_divider()
+        //.window_divider()
         .inner_block()
         .begin()
             .label('переменные:')
@@ -835,12 +847,25 @@ function drawFunctionBody(programBody, currentFunction){
 
         if(get_combination(currentFunction).currentFunctionInCustomTranslateMode){
             programBody
+                .inner_block()
+                .begin()
                 .text_input(get_combination(currentFunction).translate, function(text){
                     get_combination(currentFunction).translate = text
                 })
+                .end()
         }
         else
             drawProgram(programBody, get_combination(currentFunction).body)
+
+    programBody
+        .window_divider()
+        .window_divider()
+        .window_divider()
+        .window_divider()
+        .window_divider()
+        .window_divider()
+        .window_divider()
+        .window_divider()
 }
 
 function redraw(){
@@ -1154,7 +1179,7 @@ function deserialize(functions){
         })
     }
 
-    function deserializeArguments(arguments){
+    function deserializeArguments(arguments, f){
         var newArguments = []
 
         for(var i in arguments){
@@ -1176,12 +1201,17 @@ function deserialize(functions){
                     constant: constants[currentArgument.constantIndex]
                 })
             }
+            else if(typeof currentArgument.argumentIndex !== 'undefined'){
+                newArguments.push({
+                    argument: f.arguments[currentArgument.argumentIndex]
+                })
+            }
         }
 
         return newArguments
     }
     
-    function deserializeCombinationBody(combinationBody){
+    function deserializeCombinationBody(combinationBody, f){
         var newCombinationBody = []
 
         for(var i in combinationBody){
@@ -1189,7 +1219,7 @@ function deserialize(functions){
 
             newCombinationBody.push({
                 branch: currentCall.branch,
-                arguments: deserializeArguments(currentCall.arguments),
+                arguments: deserializeArguments(currentCall.arguments, f),
                 functionIndex: currentCall.functionIndex,
                 function: newFunctions[ currentCall.functionIndex ]
             })
@@ -1204,7 +1234,7 @@ function deserialize(functions){
         for(var j in currentFunction.combinations){
             var currentCombination = currentFunction.combinations[j]
 
-            currentCombination.body = deserializeCombinationBody(functions[i].combinations[j].body)
+            currentCombination.body = deserializeCombinationBody(functions[i].combinations[j].body, functions[i])
         }
     }
 
@@ -1302,7 +1332,7 @@ function serialize(types, constants, functions){
         return newArguments
     }
 
-    function serializeBody(combination, body){
+    function serializeBody(combination, body, f){
         var newBody = []
 
         for(var i in body){
@@ -1335,6 +1365,11 @@ function serialize(types, constants, functions){
                     else if(currentArgument.constant){
                         newArguments.push({
                             constantIndex: constantIndex(currentArgument.constant)
+                        })
+                    }
+                    else if(currentArgument.argument){
+                        newArguments.push({
+                            argumentIndex: argumentIndex(currentArgument.argument, f)
                         })
                     }
                 }
@@ -1381,7 +1416,7 @@ function serialize(types, constants, functions){
             newFunction.combinations.push({
                 variables:   serializeVariables(currentCombination.variables),
                 combination: serializeCombination(currentCombination.combination),
-                body:        serializeBody(currentCombination, currentCombination.body),
+                body:        serializeBody(currentCombination, currentCombination.body, currentFunction),
                 translate:   serializeTranslate(currentCombination.translate)
             })
         }

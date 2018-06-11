@@ -179,10 +179,19 @@ function calculateAddresses(program){
                     return combination.type
                 }
 
+                function translateArgumentCall(call){
+                    output.write(0xFF) //push [bp + variableIndex]
+                    output.write(0x76)
+                    output.write(((call.argumentIndex + 1) * 2) & 0xff) //size of bp + argument index
+
+                    return null
+                    return call.type
+                }
+
                 function translateVariableCall(call){
                     output.write(0xFF) //push [bp + variableIndex]
                     output.write(0x76)
-                    output.write((-call.variableIndex * 2) & 0xff)
+                    output.write((-(call.variableIndex + 1) * 2) & 0xff)
 
                     return null
                     return call.type
@@ -213,6 +222,8 @@ function calculateAddresses(program){
                         return translateVariableCall(call)
                     else if(typeof call.constantIndex !== 'undefined')
                         return translateConstantCall(call)
+                    else if(typeof call.argumentIndex !== 'undefined')
+                        return translateArgumentCall(call)
                 }
 
                 translateRootFunctionCall(call)
@@ -445,10 +456,19 @@ function compile(types, constants, functions, output){
                     return combination.type
                 }
 
+                function translateArgumentCall(call){
+                    output.write(0xFF) //push [bp + variableIndex]
+                    output.write(0x76)
+                    output.write(((call.argumentIndex + 1) * 2) & 0xff) //size of bp + argument index
+
+                    return null
+                    return call.type
+                }
+
                 function translateVariableCall(call){
-                    //output.write(0xFF) //push [bp + variableIndex]
-                    //output.write(0x76)
-                    //output.write((-call.variableIndex * 2) & 0xff)
+                    output.write(0xFF) //push [bp + variableIndex]
+                    output.write(0x76)
+                    output.write((-(call.variableIndex + 1) * 2) & 0xff)
 
                     //console.log(combination.variables[call.variableIndex])
 
@@ -481,6 +501,8 @@ function compile(types, constants, functions, output){
                         return translateVariableCall(call)
                     else if(typeof call.constantIndex !== 'undefined')
                         return translateConstantCall(call)
+                    else if(typeof call.argumentIndex !== 'undefined')
+                        return translateArgumentCall(call)
                 }
 
                 translateRootFunctionCall(call)

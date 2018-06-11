@@ -1,8 +1,8 @@
 window_divider
 {
     display:          block;
-    margin-top:       5px;
-    margin-bottom:    5px;
-    height:           1px;
-    background-color: #aaa;
+    /*margin-top:       5px;
+    margin-bottom:    5px;*/
+    height:           20px;
+    background-color: #fff;
 }

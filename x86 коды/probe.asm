@@ -50,4 +50,4 @@ use16
 
 ;push word[CS:0x0001]
 
-mov ax,[bp-3]
+;mov ax,[bp-3]

@@ -49,15 +49,17 @@ function calculateAddresses(program){
 
             rootCombination.beginAddress = output.address
 
-            output.write(0x55); //push bp
-            output.write(0x89); output.write(0xE5); //mov bp, sp
-            output.write(0x83); output.write(0xEC); output.write(rootCombination.variables.length * 2); //sub sp, rootCombination.variables.length * 2
+            if(!rootCombination.isMacros){
+                output.write(0x55); //push bp
+                output.write(0x89); output.write(0xE5); //mov bp, sp
+                output.write(0x83); output.write(0xEC); output.write(rootCombination.variables.length * 2); //sub sp, rootCombination.variables.length * 2
 
-            function f(out, arguments){
-                eval(rootCombination.translate)
+                function f(out, arguments){
+                    eval(rootCombination.translate)
+                }
+
+                f(output, functions[i].arguments)
             }
-
-            f(output, functions[i].arguments)
 
             for(var k in body){
                 var call = body[k]
@@ -98,10 +100,19 @@ function calculateAddresses(program){
 
                     var combination = getCombination(functions[call.functionIndex], type)
 
-                    var functionAddress = (combination.beginAddress - output.address - 4 + 1) & 65535
+                    if(combination.isMacros){
+                        function f(out, arguments){
+                            eval(combination.translate)
+                        }
 
-                    output.write(0xE8); //call combination.address
-                        output.write(functionAddress % 256); output.write(functionAddress / 256 % 256);
+                        f(output, functions[i].arguments)
+                    }
+                    else{
+                        var functionAddress = (combination.beginAddress - output.address - 4 + 1) & 65535
+
+                        output.write(0xE8); //call combination.address
+                            output.write(functionAddress % 256); output.write(functionAddress / 256 % 256);
+                    }
 
                     if(typeof call.branch !== 'undefined'){
                         var address = (rootCombination.body[call.branch].beginAddress - output.address - 7) & 65535
@@ -167,12 +178,22 @@ function calculateAddresses(program){
                         //f(output, arguments, call, rootCombination, combination, body)
                     }*/
 
-                    var functionAddress = (combination.beginAddress - output.address - 4 + 1) & 65535
+                    if(combination.isMacros){
+                        function f(out, arguments){
+                            eval(combination.translate)
+                        }
 
-                    output.write(0xE8); //call combination.address
-                        output.write(functionAddress % 256); output.write(functionAddress / 256 % 256);
+                        f(output, functions[i].arguments)
+                    }
+                    else{
+                        var functionAddress = (combination.beginAddress - output.address - 4 + 1) & 65535
+
+                        output.write(0xE8); //call combination.address
+                            output.write(functionAddress % 256); output.write(functionAddress / 256 % 256);
+                    }
 
                     output.write(0x50); //push ax
+
                     call.endAddress = output.address
 
                     //return null //temporary
@@ -182,7 +203,7 @@ function calculateAddresses(program){
                 function translateArgumentCall(call){
                     output.write(0xFF) //push [bp + variableIndex]
                     output.write(0x76)
-                    output.write(((call.argumentIndex + 1) * 2) & 0xff) //size of bp + argument index
+                    output.write(((functions[i].arguments.length - call.argumentIndex + 1) * 2) & 0xff) //size of bp + argument index
 
                     return null
                     return call.type
@@ -191,7 +212,7 @@ function calculateAddresses(program){
                 function translateVariableCall(call){
                     output.write(0xFF) //push [bp + variableIndex]
                     output.write(0x76)
-                    output.write((-(call.variableIndex + 1) * 2) & 0xff)
+                    output.write((-call.variableIndex * 2) & 0xff)
 
                     return null
                     return call.type
@@ -229,11 +250,13 @@ function calculateAddresses(program){
                 translateRootFunctionCall(call)
             }
 
-            output.write(0x89); output.write(0xEC);                                                  //mov sp, bp
-            output.write(0x5D);                                                                      //pop bp
-            //output.write(0x83); output.write(0xC4); output.write(functions[i].arguments.length * 2); //add sp, functions[i].arguments.length * 2
-            //output.write(0xA1); output.write(0x00); output.write(0x00);                              //mov ax, 0
-            output.write(0xC3);                                                                      //ret
+            if(!rootCombination.isMacros){
+                output.write(0x89); output.write(0xEC);                                                  //mov sp, bp
+                output.write(0x5D);                                                                      //pop bp
+                //output.write(0x83); output.write(0xC4); output.write(functions[i].arguments.length * 2); //add sp, functions[i].arguments.length * 2
+                //output.write(0xA1); output.write(0x00); output.write(0x00);                              //mov ax, 0
+                output.write(0xC3);                                                                       //ret
+            }
 
             rootCombination.endAddress = output.address
         }
@@ -331,17 +354,17 @@ function compile(types, constants, functions, output){
             var rootCombination = combinations[j]
             var body = rootCombination.body
 
-            output.write(0x55);                                                                         //push bp
-            output.write(0x89); output.write(0xE5);                                                     //mov bp, sp
-            output.write(0x83); output.write(0xEC); output.write(rootCombination.variables.length * 2); //sub sp, rootCombination.variables.length * 2
+            if(!rootCombination.isMacros){
+                output.write(0x55);                                                                         //push bp
+                output.write(0x89); output.write(0xE5);                                                     //mov bp, sp
+                output.write(0x83); output.write(0xEC); output.write(rootCombination.variables.length * 2); //sub sp, rootCombination.variables.length * 2
 
-            //console.log(JSON.stringify(rootCombination.translate))
+                function f(out, arguments){
+                    eval(rootCombination.translate)
+                }
 
-            function f(out, arguments){
-                eval(rootCombination.translate)
+                f(output, functions[i].arguments)
             }
-
-            f(output, functions[i].arguments)
 
             for(var k in body){
                 var call = body[k]
@@ -380,10 +403,19 @@ function compile(types, constants, functions, output){
 
                     var combination = getCombination(functions[call.functionIndex], type)
 
-                    var functionAddress = (combination.beginAddress - output.address - 4 + 1) & 65535
+                    if(combination.isMacros){
+                        function f(out, arguments){
+                            eval(combination.translate)
+                        }
 
-                    output.write(0xE8); //call combination.address
-                        output.write(functionAddress % 256); output.write(functionAddress / 256 % 256);
+                        f(output, functions[i].arguments)
+                    }
+                    else{
+                        var functionAddress = (combination.beginAddress - output.address - 4 + 1) & 65535
+
+                        output.write(0xE8); //call combination.address
+                            output.write(functionAddress % 256); output.write(functionAddress / 256 % 256);
+                    }
 
                     if(typeof call.branch !== 'undefined'){
                         var address = (rootCombination.body[call.branch].beginAddress - output.address - 7) & 65535
@@ -445,10 +477,19 @@ function compile(types, constants, functions, output){
                         //f(output, arguments, call, rootCombination, combination, body)
                     }*/
 
-                    var functionAddress = (combination.beginAddress - output.address - 4 + 1) & 65535
+                    if(combination.isMacros){
+                        function f(out, arguments){
+                            eval(combination.translate)
+                        }
 
-                    output.write(0xE8); //call combination.address
-                        output.write(functionAddress % 256); output.write(functionAddress / 256 % 256);
+                        f(output, functions[i].arguments)
+                    }
+                    else{
+                        var functionAddress = (combination.beginAddress - output.address - 4 + 1) & 65535
+
+                        output.write(0xE8); //call combination.address
+                            output.write(functionAddress % 256); output.write(functionAddress / 256 % 256);
+                    }
 
                     output.write(0x50); //push ax
 
@@ -459,7 +500,7 @@ function compile(types, constants, functions, output){
                 function translateArgumentCall(call){
                     output.write(0xFF) //push [bp + variableIndex]
                     output.write(0x76)
-                    output.write(((call.argumentIndex + 1) * 2) & 0xff) //size of bp + argument index
+                    output.write(((functions[i].arguments.length - call.argumentIndex + 1) * 2) & 0xff) //size of bp + argument index
 
                     return null
                     return call.type
@@ -468,7 +509,7 @@ function compile(types, constants, functions, output){
                 function translateVariableCall(call){
                     output.write(0xFF) //push [bp + variableIndex]
                     output.write(0x76)
-                    output.write((-(call.variableIndex + 1) * 2) & 0xff)
+                    output.write((-call.variableIndex * 2) & 0xff)
 
                     //console.log(combination.variables[call.variableIndex])
 
@@ -508,11 +549,13 @@ function compile(types, constants, functions, output){
                 translateRootFunctionCall(call)
             }
 
-            output.write(0x89); output.write(0xEC);                                                  //mov sp, bp
-            output.write(0x5D);                                                                      //pop bp
-            //output.write(0x83); output.write(0xC4); output.write(functions[i].arguments.length * 2); //add sp, functions[i].arguments.length * 2
-            //output.write(0xA1); output.write(0x00); output.write(0x00);                              //mov ax, 0
-            output.write(0xC3);                                                                      //ret
+            if(!rootCombination.isMacros){
+                output.write(0x89); output.write(0xEC);                                                  //mov sp, bp
+                output.write(0x5D);                                                                      //pop bp
+                //output.write(0x83); output.write(0xC4); output.write(functions[i].arguments.length * 2); //add sp, functions[i].arguments.length * 2
+                //output.write(0xA1); output.write(0x00); output.write(0x00);                              //mov ax, 0
+                output.write(0xC3);
+            }                                                                      //ret
         }
     }
 

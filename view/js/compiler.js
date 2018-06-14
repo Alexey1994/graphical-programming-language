@@ -20,6 +20,7 @@ var functions = [
                 combination: [],
                 variables: [],
                 body: [],
+                isMacros: true,
                 translate: ''
             }
         ],
@@ -30,7 +31,7 @@ var functions = [
 var currentConstant
 var currentFunction = functions[0]
 var currentFunctionInCustomTranslateMode = false
-var translateFunctionCall = ''//"//call\nvar address = (combination.beginAddress - out.address - 4 + 1) & 65535\nout.write(0xE8);\n    out.write(address % 256); out.write((address / 256) % 256);\nout.write(0x50);\n\n//jump\nif(typeof call.branch !== 'undefined'){\n    address = (body[call.branch].beginAddress - out.address - 7) & 65535\n\n    out.write(0x83); out.write(0xF8); //cmp ax, 0\n        out.write(0x00);\n                                \n    out.write(0x0F); out.write(0x84); //je address\n        out.write(address % 256); out.write((address / 256) % 256);\n}" //call 0x00; push ax
+var translateFunctionCall = ''
 
 function functionIndex(f){
     for(var i=0; i<functions.length; ++i)
@@ -780,6 +781,7 @@ function drawFunctionBody(programBody, currentFunction){
                         combination: [],
                         variables: [],
                         body: [],
+                        isMacros: false,
                         translate: translateFunctionCall
                     }
 
@@ -843,21 +845,27 @@ function drawFunctionBody(programBody, currentFunction){
             redraw()
         })
         .label('текстовый режим')
-        .window_divider()
+        .divider()
+        .inner(function(parent){
+            if(get_combination(currentFunction).currentFunctionInCustomTranslateMode){
+                parent
+                    .divider()
+                    .checkbox(get_combination(currentFunction).isMacros, function(state){
+                        get_combination(currentFunction).isMacros = state
+                        redraw()
+                    })
+                    .label('режим макроса')
 
-        if(get_combination(currentFunction).currentFunctionInCustomTranslateMode){
-            programBody
-                .inner_block()
-                .begin()
-                .text_input(get_combination(currentFunction).translate, function(text){
-                    get_combination(currentFunction).translate = text
-                })
-                .end()
-        }
-        else
-            drawProgram(programBody, get_combination(currentFunction).body)
-
-    programBody
+                    .divider()
+                    .begin()
+                        .text_input(get_combination(currentFunction).translate, function(text){
+                            get_combination(currentFunction).translate = text
+                        })
+                    .end()
+            }
+            else
+                drawProgram(programBody, get_combination(currentFunction).body)
+        })
         .window_divider()
         .window_divider()
         .window_divider()
@@ -1027,6 +1035,7 @@ function redraw(){
                                             combination: [],
                                             variables: [],
                                             body: [],
+                                            isMacros: false,
                                             translate: translateFunctionCall
                                         }
                                     ],
@@ -1158,6 +1167,7 @@ function deserialize(functions){
 
             newCombinations.push({
                 combination: deserializeCombination(currentCombination.combination),
+                isMacros: currentCombination.isMacros,
                 translate: currentCombination.translate,
                 variables: currentCombination.variables
             })
@@ -1417,6 +1427,7 @@ function serialize(types, constants, functions){
                 variables:   serializeVariables(currentCombination.variables),
                 combination: serializeCombination(currentCombination.combination),
                 body:        serializeBody(currentCombination, currentCombination.body, currentFunction),
+                isMacros:    currentCombination.isMacros? true: false,
                 translate:   serializeTranslate(currentCombination.translate)
             })
         }

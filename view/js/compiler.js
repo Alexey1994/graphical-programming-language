@@ -30,8 +30,8 @@ var functions = [
 
 var currentConstant
 var currentFunction = functions[0]
-var currentFunctionInCustomTranslateMode = false
-var translateFunctionCall = ''
+var currentArgument
+var currentVariable
 
 function functionIndex(f){
     for(var i=0; i<functions.length; ++i)
@@ -686,10 +686,11 @@ function drawFunctionBody(programBody, currentFunction){
                     currentFunction.arguments.forEach(function(argument, i){
                         parent
                             .function(
-                                argument.label + ' ' + argument.name,
+                                argument.name,
 
                                 function(){
-                                    console.log(argument)
+                                    currentArgument = argument
+                                    redraw()
                                 },
 
                                 function(){
@@ -782,7 +783,7 @@ function drawFunctionBody(programBody, currentFunction){
                         variables: [],
                         body: [],
                         isMacros: false,
-                        translate: translateFunctionCall
+                        translate: ''
                     }
 
                     for(var i=0; i<currentFunction.arguments.length; ++i)
@@ -809,6 +810,8 @@ function drawFunctionBody(programBody, currentFunction){
 
                                 function(){
                                     console.log(variable)
+                                    currentVariable = variable
+                                    redraw()
                                 },
 
                                 function(){
@@ -840,32 +843,105 @@ function drawFunctionBody(programBody, currentFunction){
         .end()
         .window_divider()
 
-        .checkbox(get_combination(currentFunction).currentFunctionInCustomTranslateMode, function(state){
-            get_combination(currentFunction).currentFunctionInCustomTranslateMode = state
-            redraw()
-        })
-        .label('текстовый режим')
-        .divider()
         .inner(function(parent){
-            if(get_combination(currentFunction).currentFunctionInCustomTranslateMode){
+            if(currentArgument){
                 parent
-                    .divider()
-                    .checkbox(get_combination(currentFunction).isMacros, function(state){
-                        get_combination(currentFunction).isMacros = state
+                    .button('вернуться к телу функции', function(){
+                        currentArgument = undefined
                         redraw()
                     })
-                    .label('режим макроса')
 
+                    .label('имя аргумента')
+                    .input_text('', currentArgument.name, function(element, event){
+                        currentArgument.name = element.text
+                    })
                     .divider()
-                    .begin()
-                        .text_input(get_combination(currentFunction).translate, function(text){
-                            get_combination(currentFunction).translate = text
-                        })
-                    .end()
+
+                    .label('описание аргумента')
+                    .input_text('', currentArgument.label, function(element, event){
+                        currentArgument.label = element.text
+                    })
+                    .divider()
+
+                    .menu(types, function(type){
+                        currentArgument.type = type
+                        redraw()
+                    })
+
+                    .inner(function(parent){
+                        if(currentArgument.type){
+                            parent
+                                .label('выбранный тип: ')
+                                .label(currentArgument.type.name)
+                        }
+                        else{
+                            parent
+                                .label('тип не выбран')
+                        }
+                    })
             }
-            else
-                drawProgram(programBody, get_combination(currentFunction).body)
+            else if(currentVariable){
+                parent
+                    .button('вернуться к телу функции', function(){
+                        currentVariable = undefined
+                        redraw()
+                    })
+                    .divider()
+
+                    .label('имя переменной')
+                    .input_text('', currentVariable.name, function(element, event){
+                        currentVariable.name = element.text
+                    })
+                    .divider()
+
+                    .menu(types, function(type){
+                        currentVariable.type = type
+                        redraw()
+                    })
+
+                    .inner(function(parent){
+                        if(currentVariable.type){
+                            parent
+                                .label('выбранный тип: ')
+                                .label(currentVariable.type.name)
+                        }
+                        else{
+                            parent
+                                .label('тип не выбран')
+                        }
+                    })
+            }
+            else{
+                parent
+                    .checkbox(get_combination(currentFunction).currentFunctionInCustomTranslateMode, function(state){
+                        get_combination(currentFunction).currentFunctionInCustomTranslateMode = state
+                        redraw()
+                    })
+                    .label('текстовый режим')
+                    .divider()
+                    .inner(function(parent){
+                        if(get_combination(currentFunction).currentFunctionInCustomTranslateMode){
+                            parent
+                                .divider()
+                                .checkbox(get_combination(currentFunction).isMacros, function(state){
+                                    get_combination(currentFunction).isMacros = state
+                                    redraw()
+                                })
+                                .label('режим макроса')
+
+                                .divider()
+                                .begin()
+                                    .text_input(get_combination(currentFunction).translate, function(text){
+                                        get_combination(currentFunction).translate = text
+                                    })
+                                .end()
+                        }
+                        else
+                            drawProgram(programBody, get_combination(currentFunction).body)
+                    })
+            }
         })
+        
         .window_divider()
         .window_divider()
         .window_divider()
@@ -1036,7 +1112,7 @@ function redraw(){
                                             variables: [],
                                             body: [],
                                             isMacros: false,
-                                            translate: translateFunctionCall
+                                            translate: ''
                                         }
                                     ],
                                     currentCombination: 0

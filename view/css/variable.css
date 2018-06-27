@@ -9,8 +9,9 @@ variable_name
     display:          table-cell;
     padding:          10px;
     vertical-align:   middle;
+    border-radius:    15px;
     color:            #000;
-    background-color: #3cc73c;
+    background-color: #8bbf8b;
     box-shadow:       3px 3px 6px 0px #7d7d7d;
 }
 

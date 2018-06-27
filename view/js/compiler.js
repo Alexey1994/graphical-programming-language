@@ -73,6 +73,12 @@ function get_combination(f){
     return f.combinations[f.currentCombination]
 }
 
+function innerValueIndex(innerValue, variable){
+    for(var i = 0; i < variable.type.type.value.length; ++i)
+        if(innerValue === variable.type.type.value[i])
+            return i
+}
+
 function allAllowedFunctions(f, argumentNumber){
     var allowedFunctions = []
 
@@ -364,6 +370,38 @@ function drawVariable(parent, variable, parentList, indexInParentList){
                     })
             }
         )
+
+    if(variable.type.type.type == primitiveTypes[2]){
+        parent
+            .cell()
+            .begin()
+
+        if(parentList[indexInParentList].innerValue){
+            parent
+                .variable(
+                    parentList[indexInParentList].innerValue.name,
+                    
+                    function(event){
+
+                    },
+
+                    function(event){
+                        parentList[indexInParentList].innerValue = undefined
+                        redraw()
+                    }
+                )
+        }
+        else{
+            parent
+                .menu(variable.type.type.value, function(innerVariable){
+                    parentList[indexInParentList].innerValue = innerVariable
+                    redraw()
+                })
+        }
+
+        parent
+            .end()
+    }
 }
 
 function drawConstant(parent, constant, parentList, indexInParentList){
@@ -1236,6 +1274,15 @@ function deserialize(functions){
     }
 
     function deserializeCombinations(combinations){
+        function deserializeVariables(variables){
+            return variables.map(function(variable){
+                return {
+                    name: variable.name,
+                    type: types[variable.typeIndex]
+                }
+            })
+        }
+
         var newCombinations = []
 
         for(var i in combinations){
@@ -1245,7 +1292,7 @@ function deserialize(functions){
                 combination: deserializeCombination(currentCombination.combination),
                 isMacros: currentCombination.isMacros,
                 translate: currentCombination.translate,
-                variables: currentCombination.variables
+                variables: deserializeVariables(currentCombination.variables)
             })
         }
 
@@ -1253,6 +1300,16 @@ function deserialize(functions){
     }
 
     var newFunctions = []
+
+    function deserializeArguments(arguments){
+        return arguments.map(function(argument){
+            return {
+                name: argument.name,
+                label: argument.label,
+                type: types[argument.typeIndex]
+            }
+        })
+    }
 
     for(var i in functions){
         var currentFunction = functions[i]
@@ -1278,9 +1335,19 @@ function deserialize(functions){
                 })
             }
             else if(typeof currentArgument.variableIndex !== 'undefined'){
-                newArguments.push({
-                    variable: currentCombination.variables[currentArgument.variableIndex]
-                })
+                var variable = currentCombination.variables[currentArgument.variableIndex]
+
+                if(typeof currentArgument.innerValueIndex !== 'undefined'){
+                    newArguments.push({
+                        variable: variable,
+                        innerValue: variable.type.type.value[currentArgument.innerValueIndex]
+                    })
+                }
+                else{
+                    newArguments.push({
+                        variable: variable
+                    })
+                }
             }
             else if(typeof currentArgument.constantIndex !== 'undefined'){
                 newArguments.push({
@@ -1397,25 +1464,12 @@ function serialize(types, constants, functions){
             var currentVariable = variables[i]
 
             newVariables.push({
-                name: currentVariable.name
+                name: currentVariable.name,
+                typeIndex: typeIndex(currentVariable.type)
             })
         }
 
         return newVariables
-    }
-
-    function serializeArguments(arguments){
-        var newArguments = []
-
-        for(var i in arguments){
-            var currentArgument = argumnets[i]
-
-            newArguments.push({
-
-            })
-        }
-
-        return newArguments
     }
 
     function serializeBody(combination, body, f){
@@ -1445,7 +1499,8 @@ function serialize(types, constants, functions){
                     }
                     else if(currentArgument.variable){
                         newArguments.push({
-                            variableIndex: variableIndex(combination, currentArgument.variable)
+                            variableIndex: variableIndex(combination, currentArgument.variable),
+                            innerValueIndex: innerValueIndex(currentArgument.innerValue, currentArgument.variable)
                         })
                     }
                     else if(currentArgument.constant){
@@ -1487,12 +1542,22 @@ function serialize(types, constants, functions){
         return newCombination
     }
 
+    function serializeArguments(arguments){
+        return arguments.map(function(argument){
+            return {
+                name: argument.name,
+                label: argument.label,
+                typeIndex: typeIndex(argument.type)
+            }
+        })
+    }
+
     for(var i in functions)
     {
         var currentFunction = functions[i]
         var newFunction = {
             name: currentFunction.name,
-            arguments: currentFunction.arguments,
+            arguments: serializeArguments(currentFunction.arguments),
             combinations: []
         }
 
@@ -1500,7 +1565,7 @@ function serialize(types, constants, functions){
             var currentCombination = currentFunction.combinations[j]
 
             newFunction.combinations.push({
-                variables:   serializeVariables(currentCombination.variables),
+                variables:   serializeVariables(currentCombination.variables, currentCombination),
                 combination: serializeCombination(currentCombination.combination),
                 body:        serializeBody(currentCombination, currentCombination.body, currentFunction),
                 isMacros:    currentCombination.isMacros? true: false,

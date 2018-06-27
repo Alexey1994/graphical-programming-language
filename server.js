@@ -23,6 +23,13 @@ function Output(){
 }
 
 
+function variableSize(variable, types){
+    //for(var i in variable.type)
+    var variableType = types[variable.typeIndex]
+    console.log(variableType)
+}
+
+
 function calculateAddresses(program){
     var functions = program.functions
     var constants = program.constants
@@ -48,6 +55,10 @@ function calculateAddresses(program){
             var body = rootCombination.body
 
             rootCombination.beginAddress = output.address
+
+            for(var k in rootCombination.variables){
+                variableSize(rootCombination.variables[k], types)
+            }
 
             if(!rootCombination.isMacros){
                 output.write(0x55); //push bp

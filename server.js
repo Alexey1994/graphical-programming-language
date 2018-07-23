@@ -24,9 +24,21 @@ function Output(){
 
 
 function variableSize(variable, types){
-    //for(var i in variable.type)
     var variableType = types[variable.typeIndex]
-    console.log(variableType)
+
+    //console.log(variable)
+
+    if(variableType.type.primitiveTypeIndex == 0)
+        return variableType.type.value
+
+    if(variableType.type.primitiveTypeIndex == 2){
+        var variablesSize = 0
+
+        for(var i = 0; i < variableType.type.value.length; ++i)
+            variablesSize += variableSize(variableType.type.value[i], types)
+
+        return variablesSize
+    }
 }
 
 
@@ -43,6 +55,22 @@ function calculateAddresses(program){
         }
     }
 
+    function typeSize(type){
+        if(type.type.primitiveTypeIndex == 0)
+            type.size = type.type.value
+
+        if(type.type.primitiveTypeIndex == 2){
+            type.size = 0
+
+            for(var i in type.type.values){
+                type.size = type.type.value
+            }
+        }
+    }
+
+    for(var i in types)
+        typeSize(types[i])
+
     //output.write(0x8C); output.write(0xC8); //mov ax,cs
     //output.write(0x8E); output.write(0xD8); //mov ds,ax
     //output.write(0x8E); output.write(0xD0); //mov ss,ax
@@ -56,9 +84,33 @@ function calculateAddresses(program){
 
             rootCombination.beginAddress = output.address
 
+            var variableIndex = 0
+
             for(var k in rootCombination.variables){
-                variableSize(rootCombination.variables[k], types)
+                /*function variableSize(variable, types){
+                    var variableType = types[variable.typeIndex]
+
+                    //console.log(variable)
+
+                    if(variableType.type.primitiveTypeIndex == 0)
+                        return variableType.type.value
+
+                    if(variableType.type.primitiveTypeIndex == 2){
+                        var variablesSize = 0
+
+                        for(var i = 0; i < variableType.type.value.length; ++i)
+                            variablesSize += variableSize(variableType.type.value[i], types)
+
+                        return variablesSize
+                    }
+                }*/
+
+                rootCombination.variables[k].size = variableSize(rootCombination.variables[k], types)
+                rootCombination.variables[k].index = variableIndex
+                variableIndex += rootCombination.variables[k].size
             }
+
+            console.log(rootCombination.variables)
 
             if(!rootCombination.isMacros){
                 output.write(0x55); //push bp
@@ -220,10 +272,47 @@ function calculateAddresses(program){
                     return call.type
                 }
 
-                function translateVariableCall(call){
+                function translateVariableCall(call, variables){
                     output.write(0xFF) //push [bp + variableIndex]
                     output.write(0x76)
                     output.write((-call.variableIndex * 2) & 0xff)
+/*
+                    function getVariableIndex(findedVariable, variables){
+                        var index = 0
+
+                        for(var i in variables){
+                            var currentVariable = variables[i]
+                            var currentType = types[currentVariable.typeIndex]
+
+                            if(currentVariable == findedVariable)
+                                return {index: index, isEnd: true}
+
+                            if(currentType.type.primitiveTypeIndex == 0)
+                                index += currentType.type.value
+
+                            if(currentType.type.primitiveTypeIndex == 2){
+                                var state = getVariableIndex(findedVariable, currentType.type.value)
+
+                                if(state.isEnd)
+                                    return state
+
+                                index += state.index
+                            }
+                        }
+
+                        return {index: index, isEnd: false}
+                    }*/
+
+                    var variable = variables[call.variableIndex]
+                    var variableType = types[variable.typeIndex]
+                    var innerValueIndex = call.innerValueIndex
+
+                    if(typeof innerValueIndex !== 'undefined')
+                        //console.log(getVariableIndex(variable, variables))
+                        ;//console.log(variableType.type.value[innerValueIndex])
+
+                    //console.log(call)
+                    //console.log(variableSize(variable, types))
 
                     return null
                     return call.type
@@ -251,7 +340,7 @@ function calculateAddresses(program){
                     if(typeof call.functionIndex !== 'undefined')
                         return translateFunctionCall(call)
                     else if(typeof call.variableIndex !== 'undefined')
-                        return translateVariableCall(call)
+                        return translateVariableCall(call, rootCombination.variables)
                     else if(typeof call.constantIndex !== 'undefined')
                         return translateConstantCall(call)
                     else if(typeof call.argumentIndex !== 'undefined')

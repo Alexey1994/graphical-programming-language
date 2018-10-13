@@ -888,17 +888,18 @@ function drawFunctionBody(programBody, currentFunction){
                         currentArgument = undefined
                         redraw()
                     })
+                    .divider()
 
-                    .label('имя аргумента')
                     .input_text('', currentArgument.name, function(element, event){
                         currentArgument.name = element.text
                     })
+                    .label('имя аргумента')
                     .divider()
 
-                    .label('описание аргумента')
                     .input_text('', currentArgument.label, function(element, event){
                         currentArgument.label = element.text
                     })
+                    .label('описание аргумента')
                     .divider()
 
                     .menu(types, function(type){
@@ -1350,8 +1351,16 @@ function deserialize(functions){
                 }
             }
             else if(typeof currentArgument.constantIndex !== 'undefined'){
+                var constant = constants[currentArgument.constantIndex]
+                var selectedField
+
+                if(currentArgument.field) {
+                    selectedField = constant.type.type.value[currentArgument.field.index]
+                }
+
                 newArguments.push({
-                    constant: constants[currentArgument.constantIndex]
+                    constant: constant,
+                    selectedField
                 })
             }
             else if(typeof currentArgument.argumentIndex !== 'undefined'){
@@ -1504,8 +1513,16 @@ function serialize(types, constants, functions){
                         })
                     }
                     else if(currentArgument.constant){
+                        var field = {}
+
+                        if(currentArgument.selectedField) {
+                            field.index = currentArgument.constant.type.type.value.indexOf(currentArgument.selectedField)
+                            field.field = {}
+                        }
+
                         newArguments.push({
-                            constantIndex: constantIndex(currentArgument.constant)
+                            constantIndex: constantIndex(currentArgument.constant),
+                            field: field
                         })
                     }
                     else if(currentArgument.argument){
